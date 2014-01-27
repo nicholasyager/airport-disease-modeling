@@ -65,11 +65,16 @@ def create_network(nodes, edges):
         for line in f.readlines():
             entries = line.replace('"',"").rstrip().split(",")
 
-            if entries[3] == "United States":
-                G.add_node(entries[0], 
-                           name=entries[1], 
-                           lat=entries[6],
-                           lon=entries[7])
+           # if entries[3] == "United States":
+           #     G.add_node(entries[0], 
+           #                name=entries[1], 
+           #                lat=entries[6],
+           #                lon=entries[7])
+            G.add_node(entries[0], 
+                       name=entries[1], 
+                       lat=entries[6],
+                       lon=entries[7])
+
 
     print("\t\t\t\t\t[Done]")
     
@@ -88,7 +93,7 @@ def create_network(nodes, edges):
     print("\t\t\t\t\t\t[Done]")
 
     # Remove nodes without inbound edges
-    deg = G.degree()
+    deg = G.in_degree()
     to_remove = [n for n in deg if deg[n] < 1]
     G.remove_nodes_from(to_remove)
 
@@ -131,11 +136,11 @@ def infection(network, vaccination, start):
     # Assign the infected
     infected = str(start)
     network.node[infected]["status"] = "i"
-    network.node[infected]["color"]  = "o"
+    network.node[infected]["color"]  = "orange"
 
     print("\tInitial vector: "+network.node[infected]["name"])
-    print("\t\t Degree: "+str(network.degree(infected)))
-    print("\t\t Betweenness: "+str(nx.betweenness_centrality(network)[infected]))
+    #print("\t\t Degree: "+str(network.degree(infected)))
+    #print("\t\t Betweenness: "+str(nx.betweenness_centrality(network)[infected]))
 
     # Iterate through the evolution of the disease.
 
@@ -149,7 +154,7 @@ def infection(network, vaccination, start):
             age = network.node[node]["age"]
             color = network.node[node]["color"]
 
-            if status is "i" and age >= random.randint(5,7):
+            if status is "i" and age >= 5:
                 # The infected has reached its recovery time
                 network.node[node]["status"] = "r"
                 network.node[node]["color"] = "g"
@@ -207,8 +212,20 @@ def infection(network, vaccination, start):
         for node in network.nodes():
             colors.append(network.node[node]["color"])
 
-        nx.draw(network,
-            node_color = colors)
+        pos = nx.spring_layout(network)
+
+        nx.draw_networkx_nodes(network,
+                pos,
+                node_size=25,
+                with_labels=False,
+                node_color = colors)
+
+        nx.draw_networkx_edges(network,pos,
+                               width=1,
+                               edge_color='black',
+                               arrows=False)
+
+        plt.axis('off')
         plt.show()
 
 
