@@ -191,7 +191,7 @@ def infection(network, vaccination, start):
                         if infect_status != "r" and infect_status != "i":
                             network.node[infectees]["status"] = "i"
                             network.node[infectees]["age"] = 0
-                            network.node[infectees]["color"] = "r"
+                            network.node[infectees]["color"] = "orange"
                 network.node[node]["age"] += 1
 
         # Loop twice to prevent bias.
@@ -231,6 +231,8 @@ def visualize(network, pos):
     for node in network.nodes():
         colors.append(network.node[node]["color"])
 
+    plt.figure(figsize=(8,8))
+
     nx.draw_networkx_nodes(network,
             pos,
             node_size=25,
@@ -247,8 +249,11 @@ def visualize(network, pos):
     number_files = str(len(os.listdir()))
     while len(number_files) < 3:
         number_files = "0" + number_files
+
+    
     plt.savefig("infection-{0}.png".format(number_files),
-                bbox_inches='tight'     
+                bbox_inches='tight', dpi=100 
             )
+
 if __name__ == "__main__":
        main(sys.argv[1:])
