@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+
 """
 flu_simulator.py is a simulator for a flu-like infection spreading across a 
 network between airports (nodeS) via air travel routes (edges). The goal of this
@@ -19,8 +20,10 @@ import getopt
 import matplotlib
 import matplotlib.pyplot as plt
 import networkx as nx
+import os
 import random
 import sys 
+import time
 
 def main(argv):
     """
@@ -35,8 +38,15 @@ def main(argv):
 
     """
 
+    random.seed(100)
+
     # Create the network using the command arguments.
     network = create_network(argv[0], argv[1])
+
+    # Make a directory for the data, and change into that directory.
+    currenttime = time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
+    os.makedirs(currenttime)
+    os.chdir(currenttime)
 
     # Simulate the infection
     infection(network, None, 3682)
@@ -142,8 +152,10 @@ def infection(network, vaccination, start):
     #print("\t\t Degree: "+str(network.degree(infected)))
     #print("\t\t Betweenness: "+str(nx.betweenness_centrality(network)[infected]))
 
-    # Iterate through the evolution of the disease.
+    # Calculate the layout of the network to ensure even plotting.
+    pos = nx.spring_layout(network)
 
+    # Iterate through the evolution of the disease.
     for step in range(0,99):
 
         # Create variables to hold the outcomes as they happen
@@ -208,26 +220,35 @@ def infection(network, vaccination, start):
         if I is 0:
             break
 
-        colors = []
-        for node in network.nodes():
-            colors.append(network.node[node]["color"])
+        visualize(network, pos)
 
-        pos = nx.spring_layout(network)
+       
+def visualize(network, pos):
+    """
+    Visualize the network given an array of posisitons.
+    """
+    colors = []
+    for node in network.nodes():
+        colors.append(network.node[node]["color"])
 
-        nx.draw_networkx_nodes(network,
-                pos,
-                node_size=25,
-                with_labels=False,
-                node_color = colors)
+    nx.draw_networkx_nodes(network,
+            pos,
+            node_size=25,
+            with_labels=False,
+            node_color = colors)
 
-        nx.draw_networkx_edges(network,pos,
-                               width=1,
-                               edge_color='black',
-                               arrows=False)
+    nx.draw_networkx_edges(network,pos,
+                           width=1,
+                           edge_color='black',
+                           arrows=False)
 
-        plt.axis('off')
-        plt.show()
+    plt.axis('off')
 
-
+    number_files = str(len(os.listdir()))
+    while len(number_files) < 3:
+        number_files = "0" + number_files
+    plt.savefig("infection-{0}.png".format(number_files),
+                bbox_inches='tight'     
+            )
 if __name__ == "__main__":
        main(sys.argv[1:])
