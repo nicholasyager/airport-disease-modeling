@@ -49,7 +49,7 @@ def main(argv):
     os.chdir(currenttime)
 
     # Simulate the infection
-    infection(network, None, 3682)
+    infection(network, None, "3682")
 
 def create_network(nodes, edges):
     """
@@ -68,7 +68,8 @@ def create_network(nodes, edges):
     print("Creating network.")
     G = nx.DiGraph()
 
-    print("\tLoading airports.", end="")
+    print("\tLoading airports", end="")
+    sys.stdout.flush()
     # Populate the graph with nodes.
     with open(nodes) as f:
 
@@ -88,23 +89,37 @@ def create_network(nodes, edges):
 
     print("\t\t\t\t\t[Done]")
     
-    
-    print("\tLoading routes.", end="")
+    print("\tLoading routes",end="")
+    sys.stdout.flush()
     # Populate the graph with edges.
+    edge_count = 0
+    error_count = 0
+    duplicate_count = 0
     with open(edges) as f:
 
         for line in f.readlines():
             entries = line.replace('"',"").rstrip().split(",")
-            
-            if entries[3] in G.nodes() and entries[5] in G.nodes():
-                G.add_edge(entries[3], entries[5] )
+            try:
+                if G.has_edge(entries[3],entries[5]):
+                    duplicate_count += 1
+                else:
+                    G.add_edge(entries[3], entries[5] )
+                    edge_count += 1
+            except ValueError:
+                # The value doesn't exist
+                error_count += 1
+                pass
 
     
     print("\t\t\t\t\t\t[Done]")
 
+
+    
     # Remove nodes without inbound edges
-    deg = G.in_degree()
-    to_remove = [n for n in deg if deg[n] < 1]
+    indeg = G.in_degree()
+    outdeg = G.out_degree()
+    to_remove = [n for n in indeg if (indeg[n] + outdeg[n] < 1)]
+    
     G.remove_nodes_from(to_remove)
 
     return G
