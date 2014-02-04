@@ -16,14 +16,18 @@ as:
 # Author: Nicholas A. Yager
 # Date:   2013-01-12
 
+import copy
 import getopt
+import math
 import matplotlib
 import matplotlib.pyplot as plt
+from multiprocessing import Process
 import networkx as nx
 import os
 import random
 import sys 
 import time
+
 
 def main(argv):
     """
@@ -37,8 +41,11 @@ def main(argv):
         Void
 
     """
+    
+    target = "3682"
 
     random.seed(100)
+    chromosome_ids = 1
 
     # Create the network using the command arguments.
     network = create_network(argv[0], argv[1])
@@ -48,8 +55,115 @@ def main(argv):
     os.makedirs(currenttime)
     os.chdir(currenttime)
 
-    # Simulate the infection
-    infection(network, None, "3682")
+    # Simulate the infection for a baseline.
+    baseline = infection(network, None, target)
+
+    # Create 50 vaccination strategies.
+    n_strat = 50
+    nodes = network.nodes()
+    vaccinations = list()
+    for i in range(0,n_strat):
+        number_of_airports = random.randint(1,3000)
+        airports = random.sample(nodes,number_of_airports)
+        vaccinations.append(Vaccination(airports, chromosome_ids))
+        chromosome_ids += 1
+
+    
+        
+    for generation in range(0,50):
+
+        print(generation)
+
+        # Test the strategies
+
+        test_vaccinations(network, vaccinations, target)
+        calculate_fitnesses(vaccinations)
+
+        vaccinations = copy.deepcopy(sorted(vaccinations, key=lambda k: k.shared_fitness,reverse=True) )
+        infected = list()
+        closures = list()
+        colors = list()
+        highest_fitness = vaccinations[0].shared_fitness
+        lowest_fitness = vaccinations[-1].shared_fitness
+        print("High: ",highest_fitness," Low: ",lowest_fitness)
+        for strat in vaccinations:
+            infected.append(strat.infected)
+            closures.append(int(strat.closures))
+            relative_fitness = (strat.shared_fitness - lowest_fitness) / (highest_fitness - lowest_fitness)
+            colors.append(str(1-relative_fitness))
+            plt.text(strat.closures,strat.infected,strat.ID)
+            print(strat.ID, relative_fitness)
+
+
+        for index in range(int(n_strat/5), n_strat):
+            number_of_airports = random.randint(1,3000)
+            airports = random.sample(nodes,number_of_airports)
+            vaccinations[index] = Vaccination(airports, chromosome_ids)
+            chromosome_ids += 1
+
+
+    plt.axis([0,3300,0,3300])
+    plt.scatter(closures, infected, color=colors)
+    plt.show()
+
+class Vaccination:
+
+    def __init__(self, airports, ID):
+        self.closures = len(airports)
+        self.airports = copy.deepcopy(airports)
+        self.fitness = 0
+        self.shared_fitness= 0
+        self.ID = ID
+
+    def setAirports(self, airports):
+        self.airports = airports
+
+def test_vaccinations(network, vaccinations, target):
+
+    for vaccination in vaccinations:
+        print(vaccination.ID)
+        results = infection(network, vaccination.airports, target, False)
+        vaccination.fitness = results["Suscceptable"] - vaccination.closures
+        vaccination.infected = results["Infected"] + results["Recovered"]
+
+
+def calculate_fitnesses(vaccinations):
+    # Calculate the fitness with a pareto niche algorithim
+    for i in range(0,len(vaccinations)-1):
+        vaccination = vaccinations[i]
+        infected = vaccination.infected
+        closures = vaccination.closures
+
+        Mi = 0
+        # Compare with the other vaccinations
+        for j in range(0,len(vaccinations)-1):
+            # Dont compare yourself.
+            if j is i:
+                continue
+
+            other_vaccination = vaccinations[j]
+            other_infected = other_vaccination.infected
+            other_closures = other_vaccination.closures
+
+            # Distance calculation
+            delta_infected = math.pow(other_infected - infected, 2)
+            delta_closures = math.pow(other_closures - closures, 2)
+            distance = math.sqrt( delta_infected + delta_closures)
+
+            # Shared function
+            Sigma_share = 500
+            if distance <= Sigma_share:
+                Mi += 1 - (distance/Sigma_share)
+            elif distance == Sigma_share:
+                Mi += 1
+
+        # Shared fitness:
+        if Mi > 0:
+            vaccination.shared_fitness = vaccination.fitness / Mi    
+        else:
+            vaccination.shared_fitness = vaccination.fitness
+
+    return vaccinations
 
 def create_network(nodes, edges):
     """
@@ -124,7 +238,7 @@ def create_network(nodes, edges):
 
     return G
 
-def infection(network, vaccination, start):
+def infection(input_network, vaccination, start, visualize = False):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -136,17 +250,21 @@ def infection(network, vaccination, start):
                      begining.
 
     Returns:
-        void
+        state: A dictionary of the total suscceptable, infected, and recovered.
 
     """
 
     print("Simulating infection.")
+
+    network = input_network.copy()
 
     # Open the data file
     f = open("data.csv", "w")
     f.write("time, s, i, r\n")
 
     # Set the default to susceptable
+    print("\tInitializing network for infection.", end="")
+    sys.stdout.flush()
     for node in network.nodes():
         network.node[node]["status"] =  "s"
         network.node[node]["color"] = "b"
@@ -155,20 +273,31 @@ def infection(network, vaccination, start):
     # Add in the recovering
     if vaccination is not None:
         for node in vaccination:
-            network.node[node]["status"] = "r"
-            network.node[node]["color"] = "g"
+            if node is not str(start):
+                # Get the node's predecessors and sucessors
+                remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
+                remove_successors = [ (node, suc) for suc in network.successors(node)]
+                network.remove_edges_from(remove_predecessors)
+                network.remove_edges_from(remove_successors)
 
     # Assign the infected
     infected = str(start)
     network.node[infected]["status"] = "i"
     network.node[infected]["color"]  = "orange"
 
+    print("\t\t\t[Done]")
+
     print("\tInitial vector: "+network.node[infected]["name"])
+    if vaccination is not None:
+        print("\tVaccinated: ", len(vaccination) )
+    else: 
+        print("\tVaccinated: None")
     #print("\t\t Degree: "+str(network.degree(infected)))
     #print("\t\t Betweenness: "+str(nx.betweenness_centrality(network)[infected]))
 
-    # Calculate the layout of the network to ensure even plotting.
-    pos = nx.spring_layout(network)
+    if visualize:
+        # Calculate the layout of the network to ensure even plotting.
+        pos = nx.spring_layout(network)
 
     # Iterate through the evolution of the disease.
     for step in range(0,99):
@@ -230,12 +359,17 @@ def infection(network, vaccination, start):
         printline = "{0}, {1}, {2}, {3}".format(step, S, I, R)
         f.write(printline + "\n")
 
-        print("\t"+printline)
+       # print("\t"+printline)
 
         if I is 0:
             break
 
-        visualize(network, pos)
+        if visualize:
+            visualize(network, pos)
+        
+    print("\t----------\n\tS: {0}, I: {1}, R: {2}".format(S,I,R))
+
+    return {"Suscceptable":S,"Infected":I, "Recovered":R}
 
        
 def visualize(network, pos):
