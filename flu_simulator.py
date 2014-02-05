@@ -60,6 +60,7 @@ def main(argv):
 
     # Create 50 vaccination strategies.
     n_strat = 50
+    max_generations = 15
     nodes = network.nodes()
     vaccinations = list()
     for i in range(0,n_strat):
@@ -70,7 +71,7 @@ def main(argv):
 
     
         
-    for generation in range(0,50):
+    for generation in range(0,max_generations):
 
         print(generation)
 
@@ -80,30 +81,40 @@ def main(argv):
         calculate_fitnesses(vaccinations)
 
         vaccinations = copy.deepcopy(sorted(vaccinations, key=lambda k: k.shared_fitness,reverse=True) )
+
         infected = list()
         closures = list()
         colors = list()
         highest_fitness = vaccinations[0].shared_fitness
         lowest_fitness = vaccinations[-1].shared_fitness
         print("High: ",highest_fitness," Low: ",lowest_fitness)
+        
+        if generation is max_generations - 1:
+            print(vaccinations[0].airports)
+            continue
+
         for strat in vaccinations:
             infected.append(strat.infected)
             closures.append(int(strat.closures))
             relative_fitness = (strat.shared_fitness - lowest_fitness) / (highest_fitness - lowest_fitness)
             colors.append(str(1-relative_fitness))
             plt.text(strat.closures,strat.infected,strat.ID)
-            print(strat.ID, relative_fitness)
-
 
         for index in range(int(n_strat/5), n_strat):
-            number_of_airports = random.randint(1,3000)
-            airports = random.sample(nodes,number_of_airports)
-            vaccinations[index] = Vaccination(airports, chromosome_ids)
+            parent = copy.deepcopy(random.choice(vaccinations[0:int(n_strat/5)]))
+            vaccinations[index] = Vaccination(parent.airports,
+                                              chromosome_ids)
+            option = random.randint(1,10)
+            if option in range(1,9):
+                vaccinations[index].mutate(network.nodes())
+            else:
+                other_strat = copy.deepcopy(random.choice(vaccinations[0:int(n_strat/5)]))
+                vaccinations[index].recombine(other_strat)
             chromosome_ids += 1
 
 
     plt.axis([0,3300,0,3300])
-    plt.scatter(closures, infected, color=colors)
+    plt.scatter(closures, infected, color=colors, cmap=plt.cm.spectral)
     plt.show()
 
 class Vaccination:
@@ -115,8 +126,41 @@ class Vaccination:
         self.shared_fitness= 0
         self.ID = ID
 
-    def setAirports(self, airports):
-        self.airports = airports
+    def cleanDuplicates(self):
+
+        self.airports = list(set(self.airports))
+        self.closures = len(self.airports)
+
+    def recombine(self, other_strategy):
+        print(self.ID, "- Recombining with another strategy.")
+        number_to_take = random.randint(1, other_strategy.closures)
+        self.airports.extend(copy.deepcopy(random.sample(other_strategy.airports, number_to_take)))
+        self.closures = len(self.airports)
+
+        self.cleanDuplicates()
+
+    def mutate(self, nodes):
+        operation = random.randint(1,2)
+
+        if self.closures < 3:
+            operation = 1
+
+        if operation is 1:
+            # Add a new airport.
+            print(self.ID, "- Adding an airport")
+            self.airports.append(random.choice(nodes))
+            self.closures += 1
+
+        if operation is 2:
+            print(self.ID, "- Removing an airport")
+            num_to_remove = random.randint(1,int(self.closures/2))
+            to_remove = sorted(random.sample(range(0,self.closures-1), 
+                                             num_to_remove),
+                               reverse=True)
+            for item in to_remove:
+                self.airports.pop(item)
+            self.closures -= 1
+        self.cleanDuplicates()
 
 def test_vaccinations(network, vaccinations, target):
 
@@ -128,6 +172,13 @@ def test_vaccinations(network, vaccinations, target):
 
 
 def calculate_fitnesses(vaccinations):
+    """
+    Calculate the shared Pareto Niche fitness for a list of vaccination 
+    strategies.
+
+    Args:
+        vaccinations: A list of vaccination strategies.
+    """
     # Calculate the fitness with a pareto niche algorithim
     for i in range(0,len(vaccinations)-1):
         vaccination = vaccinations[i]
