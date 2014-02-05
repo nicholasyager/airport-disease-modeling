@@ -21,6 +21,8 @@ import getopt
 import math
 import matplotlib
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cm
 from multiprocessing import Process
 import networkx as nx
 import os
@@ -42,7 +44,7 @@ def main(argv):
 
     """
     
-    target = "3682"
+    target = 3682
 
     random.seed(100)
     chromosome_ids = 1
@@ -100,16 +102,18 @@ def main(argv):
             colors.append(str(1-relative_fitness))
             plt.text(strat.closures,strat.infected,strat.ID)
 
-        for index in range(int(n_strat/5), n_strat):
+        for index in range(int(n_strat/2), n_strat):
             parent = copy.deepcopy(random.choice(vaccinations[0:int(n_strat/5)]))
             vaccinations[index] = Vaccination(parent.airports,
                                               chromosome_ids)
             option = random.randint(1,10)
-            if option in range(1,9):
+            if option == 1:
                 vaccinations[index].mutate(network.nodes())
-            else:
+            elif option == 2:
                 other_strat = copy.deepcopy(random.choice(vaccinations[0:int(n_strat/5)]))
                 vaccinations[index].recombine(other_strat)
+            else:
+                print(vaccinations[index].ID, "- No genetic change")
             chromosome_ids += 1
 
 
@@ -167,7 +171,9 @@ def test_vaccinations(network, vaccinations, target):
     for vaccination in vaccinations:
         print(vaccination.ID)
         results = infection(network, vaccination.airports, target, False)
-        vaccination.fitness = results["Suscceptable"] - vaccination.closures
+        d = math.sqrt( math.pow(results["Suscceptable"],2) + math.pow(vaccination.closures,2))
+        vaccination.fitness = (results["Suscceptable"] - vaccination.closures) +\
+                              d
         vaccination.infected = results["Infected"] + results["Recovered"]
 
 
@@ -246,7 +252,7 @@ def create_network(nodes, edges):
            #                name=entries[1], 
            #                lat=entries[6],
            #                lon=entries[7])
-            G.add_node(entries[0], 
+            G.add_node(int(entries[0]), 
                        name=entries[1], 
                        lat=entries[6],
                        lon=entries[7])
@@ -260,21 +266,23 @@ def create_network(nodes, edges):
     edge_count = 0
     error_count = 0
     duplicate_count = 0
+    line_num = 1
     with open(edges) as f:
 
         for line in f.readlines():
             entries = line.replace('"',"").rstrip().split(",")
             try:
-                if G.has_edge(entries[3],entries[5]):
+                if G.has_edge(int(entries[3]),int(entries[5])):
                     duplicate_count += 1
                 else:
-                    G.add_edge(entries[3], entries[5] )
-                    edge_count += 1
+                    if line_num > 1:
+                        G.add_edge(int(entries[3]), int(entries[5]) )
+                        edge_count += 1
             except ValueError:
                 # The value doesn't exist
                 error_count += 1
                 pass
-
+            line_num += 1
     
     print("\t\t\t\t\t\t[Done]")
 
@@ -309,6 +317,7 @@ def infection(input_network, vaccination, start, visualize = False):
 
     network = input_network.copy()
 
+
     # Open the data file
     f = open("data.csv", "w")
     f.write("time, s, i, r\n")
@@ -323,8 +332,9 @@ def infection(input_network, vaccination, start, visualize = False):
     
     # Add in the recovering
     if vaccination is not None:
+        vaccination = sorted(vaccination)
         for node in vaccination:
-            if node is not str(start):
+            if node != start:
                 # Get the node's predecessors and sucessors
                 remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
                 remove_successors = [ (node, suc) for suc in network.successors(node)]
@@ -332,7 +342,7 @@ def infection(input_network, vaccination, start, visualize = False):
                 network.remove_edges_from(remove_successors)
 
     # Assign the infected
-    infected = str(start)
+    infected = start
     network.node[infected]["status"] = "i"
     network.node[infected]["color"]  = "orange"
 
@@ -343,8 +353,6 @@ def infection(input_network, vaccination, start, visualize = False):
         print("\tVaccinated: ", len(vaccination) )
     else: 
         print("\tVaccinated: None")
-    #print("\t\t Degree: "+str(network.degree(infected)))
-    #print("\t\t Betweenness: "+str(nx.betweenness_centrality(network)[infected]))
 
     if visualize:
         # Calculate the layout of the network to ensure even plotting.
