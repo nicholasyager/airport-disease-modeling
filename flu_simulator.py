@@ -62,7 +62,7 @@ def main(argv):
 
     # Create 50 vaccination strategies.
     n_strat = 50
-    max_generations = 15
+    max_generations = 25
     nodes = network.nodes()
     vaccinations = list()
     for i in range(0,n_strat):
@@ -100,7 +100,7 @@ def main(argv):
             closures.append(int(strat.closures))
             relative_fitness = (strat.shared_fitness - lowest_fitness) / (highest_fitness - lowest_fitness)
             colors.append(str(1-relative_fitness))
-            plt.text(strat.closures,strat.infected,strat.ID)
+            #plt.text(strat.closures,strat.infected,strat.ID)
 
         for index in range(int(n_strat/2), n_strat):
             parent = copy.deepcopy(random.choice(vaccinations[0:int(n_strat/5)]))
@@ -242,7 +242,7 @@ def create_network(nodes, edges):
     print("\tLoading airports", end="")
     sys.stdout.flush()
     # Populate the graph with nodes.
-    with open(nodes) as f:
+    with open(nodes, 'r', encoding='utf-8') as f:
 
         for line in f.readlines():
             entries = line.replace('"',"").rstrip().split(",")
@@ -267,7 +267,7 @@ def create_network(nodes, edges):
     error_count = 0
     duplicate_count = 0
     line_num = 1
-    with open(edges) as f:
+    with open(edges, 'r', encoding="utf-8") as f:
 
         for line in f.readlines():
             entries = line.replace('"',"").rstrip().split(",")
