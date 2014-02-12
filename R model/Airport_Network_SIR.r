@@ -14,10 +14,6 @@ library(igraph)
 main.data = read.csv("airports.csv")
 route.data = read.csv("routes.csv")
 
-# Fake Vertice Fix
-vertices <- 1:main.data$ID[length(main.data$ID)]
-vertices <- matrix(vertices)
-
 # Make Network Code
 air.net <- graph.empty()
 air.net <- add.vertices(air.net, nrow(vertices),
