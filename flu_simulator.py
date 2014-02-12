@@ -65,11 +65,11 @@ def main():
         elif o == "-r":
             ROUTE_DATA = a
 
-    NUM_SIMULATIONS = 100
+    NUM_SIMULATIONS = 5
 
+    seed = 100
 
-
-    random.seed(100)
+    random.seed(seed)
 
     # Create the network using the command arguments.
     network = create_network(AIRPORT_DATA, ROUTE_DATA)
@@ -79,6 +79,9 @@ def main():
     currenttime = time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
     os.makedirs(currenttime)
     os.chdir(currenttime)
+
+    # Record relevent data about the simulation.
+    simulation_data(network, currenttime, target, seed)
 
 
     if GENETIC:
@@ -90,6 +93,63 @@ def main():
     if DEGREE:
         degree_simulations(network, target)
 
+def simulation_data(network, time, targets, seed):
+    """
+    Output various statistics of the nature of the network to a file, including
+    the diameter, the number of cycles, number of verticies and edges, and the
+    average in and out degrees.
+
+    Args:
+        network: A NetworkX network graph.
+
+    Returns:
+        VOID
+
+    IO:
+        network.dat: A file with all of the relevent netowkr information.
+
+    """
+
+    # Number of verticies and edges
+    edges = network.number_of_edges()
+    verticies = network.number_of_nodes()
+
+    # Not every vertex can lead to every other vertex.
+    # Create a subgraph that can.
+    undirected = network.to_undirected()
+    subgraphs = nx.connected_component_subgraphs(undirected)
+
+    # Find the number of vertices in the diameter of the network
+    diameter = nx.diameter(subgraphs[1])
+
+    # Find the number of simple cycles in the network.
+    simple_cycles = nx.simple_cycles(network)
+
+    number_cycles = len(simple_cycles)
+
+    # Find the largest and smallest cycle in the network.
+    smallest_cycle = 9999999999
+    largest_cycle = 0
+    
+    for cycle in simple_cycles:
+        length = len(cycle)
+        if length < smallest_cycle:
+            smallest_cycle = length
+        if length > largest_cycle:
+            largest_cycle = length
+
+
+    data_file = open("network.dat", "w")
+    data_file.write("Simulation name: {0}\n\n".format(time))
+    data_file.write("Network properties\n===============\n")
+    data_file.write("Number of verticies: {0}\n".format(verticies))
+    data_file.write("Number of edges: {0}\n".format(edges))
+    data_file.write("Diameter: {0}\n".format(diameter))
+    data_file.write("Number of cycles: {0}\n".format(number_cycles))
+    data_file.write("Largest cycle: {0}\n".format(largest_cycle))
+    data_file.write("Smallest cycle: {0}\n".format(smallest_cycle))
+
+    data_file.close()
 
 def degree_simulations(network, targets):
     """
@@ -180,9 +240,9 @@ def betweenness_simulations(network,targets):
 
         # Write the betweenness data to a folder.
         betweenness_file = open(
-                            "betweenness/betweenness_{0}.csv".format(iteration,
-                                                                     "w")
-                           )
+                            "betweenness/betweenness_{0}.csv".format(iteration),
+                            "w")
+                           
         betweenness_file.write('"effort","total_infected"\n')
 
         # Generate a baseline
@@ -502,7 +562,6 @@ def infection(input_network, vaccination, start, visualize = False):
     f.write("time, s, i, r\n")
 
     # Set the default to susceptable
-    print("\tInitializing network for infection.", end="")
     sys.stdout.flush()
     for node in network.nodes():
         network.node[node]["status"] =  "s"
@@ -516,18 +575,21 @@ def infection(input_network, vaccination, start, visualize = False):
             if node != start:
                 # Get the node's predecessors and sucessors
                 remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
-                remove_successors = [ (node, suc) for suc in network.successors(node)]
+                remove_successors = [ (suc, node) for suc in network.successors(node)]
                 network.remove_edges_from(remove_predecessors)
                 network.remove_edges_from(remove_successors)
+                network.node[node]["status"] = 'v'
 
     # Assign the infected
     infected = start
     network.node[infected]["status"] = "i"
     network.node[infected]["color"]  = "orange"
 
-    print("\t\t\t[Done]")
-
+    in_degree = network.in_degree()[infected] 
+    out_degree = network.out_degree()[infected]
     print("\tInitial vector: "+network.node[infected]["name"])
+    print("\tIn degree: ",in_degree)
+    print("\tOut degree:",out_degree)
     if vaccination is not None:
         print("\tVaccinated: ", len(vaccination) )
     else: 
@@ -570,7 +632,7 @@ def infection(input_network, vaccination, start, visualize = False):
 
                     for infectees in victims:
                         infect_status = network.node[infectees]["status"]
-                        if infect_status != "r" and infect_status != "i":
+                        if infect_status == "s":
                             network.node[infectees]["status"] = "i"
                             network.node[infectees]["age"] = 0
                             network.node[infectees]["color"] = "orange"
@@ -584,6 +646,9 @@ def infection(input_network, vaccination, start, visualize = False):
 
             if status is "s":
                 # Count those susceptable
+                S += 1
+
+            if status is "v":
                 S += 1
 
             elif status is "r":
