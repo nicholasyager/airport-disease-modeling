@@ -19,12 +19,8 @@ as:
 import copy
 import getopt
 import math
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import matplotlib.cm as cm
-from multiprocessing import Process
 import networkx as nx
+import operator
 import os
 import random
 import sys 
@@ -51,6 +47,8 @@ def main():
                                                             "Airport data",
                                                             "Route data"])
 
+    GENETIC, BETWEENNESS, DEGREE = False, False, False
+
     for o, a in opts:
         if o == "-g":
             GENETIC = True
@@ -59,16 +57,15 @@ def main():
         elif o == "-b":
             GENETIC = False
             BETWEENNESS = True
-            DEGREE = False
         elif o == "-d":
             GENETIC = False
-            BETWEENNESS = False
             DEGREE = True
         elif o == "-a":
             AIRPORT_DATA = a
         elif o == "-r":
             ROUTE_DATA = a
 
+    NUM_SIMULATIONS = 100
 
 
 
@@ -76,27 +73,86 @@ def main():
 
     # Create the network using the command arguments.
     network = create_network(AIRPORT_DATA, ROUTE_DATA)
-    target = random.choice(network.nodes())
+    target = random.sample(network.nodes(), NUM_SIMULATIONS)
 
     # Make a directory for the data, and change into that directory.
     currenttime = time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
     os.makedirs(currenttime)
     os.chdir(currenttime)
 
+
     if GENETIC:
         genetic_simulations(network, 50, 50, target)
 
     if BETWEENNESS:
         betweenness_simulations(network, target)
+    
+    if DEGREE:
+        degree_simulations(network, target)
 
-def betweenness_simulations(network,target):
+
+def degree_simulations(network, targets):
+    """
+    Simulate the spread of infection for increasing vaccination efforts by 
+    quarantining airports of decreasing degree.
+
+    Args:
+        network: A NetworkX graph object.
+        targets: A list of the initial infection vertices.
+
+    Returns:
+        Void
+
+    IO:
+        degree.csv: A file with the number of total infected people in the
+                         network for each vaccination effort.
+    """
+    print("Degree Mode.")
+    print("\tCalculating degrees", end="")
+    sys.stdout.flush()
+    degrees = network.degree()
+    degree = sorted(degrees.keys(), key=lambda k: degrees[k], reverse=True)
+    print("\t\t\t\t\t[Done]")
+
+    print("\tHighest Degree:{0}".format(degrees[degree[0]]))
+
+    # Make a new folder for the degree data.
+    os.makedirs("degree")
+
+    iteration = 0
+    for target in targets:
+
+        # Open a file for this targ'ets dataset
+        degree_file = open("degree/degree_{0}.csv".format(iteration),"w")
+        degree_file.write('"effort","total_infected"\n')
+
+
+        # Generate a baseline
+        results = infection(network, None, target, False)
+        total_infected = results["Infected"] + results["Recovered"]
+        degree_file.write("{0},{1}\n".format(0,total_infected))
+
+        # Perform a check for every strategy
+        for effort in range(1,101,1):
+            max_index = int(len(degree) * (effort/100))-1
+            strategy = [x for x in degree[0:max_index]]
+
+            results = infection(network, strategy, target, False)
+            total_infected = results["Infected"] + results["Recovered"]
+            degree_file.write("{0},{1}\n".format(effort/100,total_infected))
+        
+        iteration += 1
+        degree_file.close()
+
+
+def betweenness_simulations(network,targets):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
 
     Args:
         network: A NetworkX graph object.
-        target: The initially infection vertex.
+        targets: A list of the initial infection vertices.
 
     Returns:
         Void
@@ -109,27 +165,42 @@ def betweenness_simulations(network,target):
     print("Betweenness Centrality Mode.")
     print("\tCalculating betweenness centrality", end="")
     sys.stdout.flush()
-    betweenness = sorted(nx.betweenness_centrality(network))
+    betweennesses = nx.betweenness_centrality(network)
+    betweenness = sorted(betweennesses.keys(), 
+                    key=lambda k: betweennesses[k], reverse=True)
+
     print("\t\t\t\t[Done]")
 
-    betweenness_file = open("betweenness.csv","w")
-    betweenness_file.write('"effort","total_infected"\n')
 
-    # Generate a baseline
-    results = infection(network, None, target, False)
-    total_infected = results["Infected"] + results["Recovered"]
-    betweenness_file.write("{0},{1}\n".format(0,total_infected))
+    os.makedirs("betweenness")
 
-    # Perform a check for every strategy
-    for effort in range(1,100,1):
-        max_index = int(len(betweenness) * (effort/100))-1
-        strategy = network.nodes()[0:max_index]
+    iteration = 0
+    for target in targets:
+    
 
-        results = infection(network, strategy, target, False)
+        # Write the betweenness data to a folder.
+        betweenness_file = open(
+                            "betweenness/betweenness_{0}.csv".format(iteration,
+                                                                     "w")
+                           )
+        betweenness_file.write('"effort","total_infected"\n')
+
+        # Generate a baseline
+        results = infection(network, None, target, False)
         total_infected = results["Infected"] + results["Recovered"]
-        betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
+        betweenness_file.write("{0},{1}\n".format(0,total_infected))
 
-    betweenness_file.close()
+        # Perform a check for every strategy
+        for effort in range(1,101,1):
+            max_index = int(len(betweenness) * (effort/100))-1
+            strategy = [x for x in betweenness[0:max_index]]
+
+            results = infection(network, strategy, target, False)
+            total_infected = results["Infected"] + results["Recovered"]
+            betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
+
+        iteration += 1
+        betweenness_file.close()
 
 def genetic_simulations(network, num_strategies, max_generations, target):
     """
