@@ -65,7 +65,7 @@ def main():
         elif o == "-r":
             ROUTE_DATA = a
 
-    NUM_SIMULATIONS = 5
+    NUM_SIMULATIONS = 50
 
     seed = 100
 
@@ -93,6 +93,28 @@ def main():
     if DEGREE:
         degree_simulations(network, target)
 
+def pad_string(integer, n):
+    """
+    Add "0" to the front of an interger so that the resulting string in n 
+    characters long.
+
+    Args:
+        integer: The number to pad.
+        n: The desired length of the string
+
+    Returns
+        string: The padded string representation of the integer.
+        
+    """
+
+    string = str(integer)
+
+    while len(string) < n:
+        string = "0" + string
+
+    return string
+
+
 def simulation_data(network, time, targets, seed):
     """
     Output various statistics of the nature of the network to a file, including
@@ -110,34 +132,45 @@ def simulation_data(network, time, targets, seed):
 
     """
 
+    print("\tCalculaing edges and verticies.")
     # Number of verticies and edges
     edges = network.number_of_edges()
     verticies = network.number_of_nodes()
 
+    
     # Not every vertex can lead to every other vertex.
     # Create a subgraph that can.
+    print("\tConverting to undirected.")
     undirected = network.to_undirected()
+    print("\tFinding subgraphs.")
     subgraphs = nx.connected_component_subgraphs(undirected)
 
     # Find the number of vertices in the diameter of the network
-    diameter = nx.diameter(subgraphs[1])
+
+    print("\tFinding network diameter.")
+    diameter = nx.diameter(subgraphs[0])
 
     # Find the number of simple cycles in the network.
-    simple_cycles = nx.simple_cycles(network)
+    #print("\tCalcuating network cycles.")
+    #simple_cycles = nx.simple_cycles(network)
 
-    number_cycles = len(simple_cycles)
 
     # Find the largest and smallest cycle in the network.
     smallest_cycle = 9999999999
     largest_cycle = 0
-    
-    for cycle in simple_cycles:
-        length = len(cycle)
-        if length < smallest_cycle:
-            smallest_cycle = length
-        if length > largest_cycle:
-            largest_cycle = length
+   
+    number_cycles = 0
 
+    #for cycle in simple_cycles:
+    #    print(cycle)
+    #    length = len(cycle)
+    #    if length < smallest_cycle:
+    #        smallest_cycle = length
+    #    if length > largest_cycle:
+    #        largest_cycle = length
+
+
+    print("\tStoring network parameters")
 
     data_file = open("network.dat", "w")
     data_file.write("Simulation name: {0}\n\n".format(time))
@@ -150,6 +183,56 @@ def simulation_data(network, time, targets, seed):
     data_file.write("Smallest cycle: {0}\n".format(smallest_cycle))
 
     data_file.close()
+
+def random_simulations(network, targets):
+    """
+    Simulate the spread of infection for increasing vaccination efforts by
+    quarantining airports randomly.
+
+    Args:
+        network: A NetworkX graph object.
+
+    Returns:
+        VOID
+
+    IO:
+        random.csv: A gile with the number of total ingected people in the
+                        network for each quarantine effort.
+    """
+
+    print("Random Mode").
+
+    # Make a new folder for the degree data.
+    os.makedirs("random")
+
+    iteration = 0
+    for target in targets:
+
+        # Open a file for this targ'ets dataset
+        random_file = open("random/random_{0}.csv".format(pad_string(iteration,4)),"w")
+        random_file.write('"effort","total_infected"\n')
+
+
+        # Generate a baseline
+        results = infection(network, None, target, False)
+        total_infected = results["Infected"] + results["Recovered"]
+        random_file.write("{0},{1}\n".format(0,total_infected))
+
+        randoms = random.sample(network.nodes(), len(network.nodes))
+
+        # Perform a check for every strategy
+        for effort in range(1,101,5):
+            max_index = int(len(randoms) * (effort/100))-1
+            strategy = [x for x in randoms[0:max_index]]
+
+            results = infection(network, strategy, target, False)
+            total_infected = results["Infected"] + results["Recovered"]
+            random_file.write("{0},{1}\n".format(effort/100,total_infected))
+        
+        iteration += 1
+        random_file.close()
+
+
 
 def degree_simulations(network, targets):
     """
@@ -183,7 +266,7 @@ def degree_simulations(network, targets):
     for target in targets:
 
         # Open a file for this targ'ets dataset
-        degree_file = open("degree/degree_{0}.csv".format(iteration),"w")
+        degree_file = open("degree/degree_{0}.csv".format(pad_string(iteration,4)),"w")
         degree_file.write('"effort","total_infected"\n')
 
 
@@ -193,7 +276,7 @@ def degree_simulations(network, targets):
         degree_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
-        for effort in range(1,101,1):
+        for effort in range(1,101,5):
             max_index = int(len(degree) * (effort/100))-1
             strategy = [x for x in degree[0:max_index]]
 
@@ -240,7 +323,8 @@ def betweenness_simulations(network,targets):
 
         # Write the betweenness data to a folder.
         betweenness_file = open(
-                            "betweenness/betweenness_{0}.csv".format(iteration),
+                            "betweenness/betweenness_{0}.csv".format( 
+                                            pad_string(iteration,4)),
                             "w")
                            
         betweenness_file.write('"effort","total_infected"\n')
@@ -251,7 +335,7 @@ def betweenness_simulations(network,targets):
         betweenness_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
-        for effort in range(1,101,1):
+        for effort in range(1,101,5):
             max_index = int(len(betweenness) * (effort/100))-1
             strategy = [x for x in betweenness[0:max_index]]
 
