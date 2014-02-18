@@ -6,7 +6,7 @@
 library(scales)
 
 # Attach Data
-main.data = read.csv("look.up.table.csv")
+main.data = read.csv("betweenness.table.csv")
 
 # Add in points.
 plot(main.data[,1],main.data[,2],
