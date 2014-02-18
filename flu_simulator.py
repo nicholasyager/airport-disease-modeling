@@ -85,7 +85,7 @@ def main():
     AIRPORT_DATA = args[0]
     ROUTE_DATA = args[1]
 
-    NUM_SIMULATIONS = 50
+    NUM_SIMULATIONS = 344
 
     seed = 100
 
@@ -191,6 +191,9 @@ def simulation_data(network, time, targets, seed):
         network.dat: A file with all of the relevent netowkr information.
 
     """
+
+    print("\tWriting graph edgelist")
+    nx.write_edgelist(network, "network.edgelist", data=False)
 
     print("\tDetermining network type.")
     # Determine if the graph is directed or undirected
