@@ -41,13 +41,18 @@ def main():
     """
    
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "bgda:r:", ["Betweenness",
+    opts, args = getopt.getopt(sys.argv[1:], "bgdru", ["Betweenness",
                                                             "Genetic",
                                                             "Degree",
-                                                            "Airport data",
-                                                            "Route data"])
+                                                            "Random",
+                                                            "Undirect"])
 
-    GENETIC, BETWEENNESS, DEGREE = False, False, False
+    GENETIC = False 
+    BETWEENNESS = False 
+    DEGREE = False 
+    RANDOM = False 
+    INFO = False
+    UNDIRECT = False
 
     for o, a in opts:
         if o == "-g":
@@ -60,10 +65,20 @@ def main():
         elif o == "-d":
             GENETIC = False
             DEGREE = True
-        elif o == "-a":
-            AIRPORT_DATA = a
         elif o == "-r":
-            ROUTE_DATA = a
+            GENETIC = False
+            RANDOM = True
+        elif o == "-i":
+            GENETIC = False
+            RANDOM = False
+            DEGREE = False
+            BETWEENNESS = False
+            INFO = True
+        elif o == "-u":
+            UNDIRECT = True
+            
+    AIRPORT_DATA = args[0]
+    ROUTE_DATA = args[1]
 
     NUM_SIMULATIONS = 50
 
@@ -75,6 +90,9 @@ def main():
     network = create_network(AIRPORT_DATA, ROUTE_DATA)
     target = random.sample(network.nodes(), NUM_SIMULATIONS)
 
+    if UNDIRECT:
+        network = network.to_undirected()
+
     # Make a directory for the data, and change into that directory.
     currenttime = time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
     os.makedirs(currenttime)
@@ -82,7 +100,6 @@ def main():
 
     # Record relevent data about the simulation.
     simulation_data(network, currenttime, target, seed)
-
 
     if GENETIC:
         genetic_simulations(network, 50, 50, target)
@@ -92,6 +109,9 @@ def main():
     
     if DEGREE:
         degree_simulations(network, target)
+
+    if RANDOM:
+        random_simulations(network, target)
 
 def pad_string(integer, n):
     """
@@ -131,6 +151,13 @@ def simulation_data(network, time, targets, seed):
         network.dat: A file with all of the relevent netowkr information.
 
     """
+
+    print("\tDetermining network type.")
+    # Determine if the graph is directed or undirected
+    if isinstance(network,nx.DiGraph):
+        network_type = "Directed"
+    else:
+        network_type = "Undirected"
 
     print("\tCalculaing edges and verticies.")
     # Number of verticies and edges
@@ -175,6 +202,7 @@ def simulation_data(network, time, targets, seed):
     data_file = open("network.dat", "w")
     data_file.write("Simulation name: {0}\n\n".format(time))
     data_file.write("Network properties\n===============\n")
+    data_file.write("Network type: {0}\n".format(network_type))
     data_file.write("Number of verticies: {0}\n".format(verticies))
     data_file.write("Number of edges: {0}\n".format(edges))
     data_file.write("Diameter: {0}\n".format(diameter))
@@ -200,7 +228,7 @@ def random_simulations(network, targets):
                         network for each quarantine effort.
     """
 
-    print("Random Mode").
+    print("Random Mode")
 
     # Make a new folder for the degree data.
     os.makedirs("random")
@@ -218,7 +246,7 @@ def random_simulations(network, targets):
         total_infected = results["Infected"] + results["Recovered"]
         random_file.write("{0},{1}\n".format(0,total_infected))
 
-        randoms = random.sample(network.nodes(), len(network.nodes))
+        randoms = random.sample(network.nodes(), len(network.nodes()))
 
         # Perform a check for every strategy
         for effort in range(1,101,5):
@@ -702,7 +730,8 @@ def infection(input_network, vaccination, start, visualize = False):
             elif status is "i":
                 # Propogate the infection.
                 if age > 0:
-                    possible_victims = network.successors(node)
+                    #print(network[node])
+                    possible_victims = network[node]
 
                     #n = int(len(possible_victims)/)
                     
