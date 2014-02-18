@@ -3,12 +3,20 @@
 
 """
 flu_simulator.py is a simulator for a flu-like infection spreading across a 
-network between airports (nodeS) via air travel routes (edges). The goal of this
+network between airports (nodes) via air travel routes (edges). The goal of this
 simulation is to test a genetic algorithim to find the optimal vaccination 
 strategy for the given network. Data is loaded with command-line arguments such
 as:
 
-    flu_simulator.py <airport database> <route database>
+    flu_simulator.py -gbdrus <airport database> <route database>
+
+    Flags:
+        -g: Run a genetic algorithm quarantine simulation.
+        -b: Run a betweenness-based quarantine simulation.
+        -d: Run a degree-based quarantine simulation.
+        -r: Run a random quarantine simulation.
+        -u: Convert the network to an undirected network.
+        -s: Run a naive simulation and output the SIR data.
 
 """
 
@@ -41,17 +49,18 @@ def main():
     """
    
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "bgdru", ["Betweenness",
+    opts, args = getopt.getopt(sys.argv[1:], "bgdrus", ["Betweenness",
                                                             "Genetic",
                                                             "Degree",
                                                             "Random",
-                                                            "Undirect"])
+                                                            "Undirect",
+                                                            "SIR"])
 
     GENETIC = False 
     BETWEENNESS = False 
     DEGREE = False 
     RANDOM = False 
-    INFO = False
+    SIR = False
     UNDIRECT = False
 
     for o, a in opts:
@@ -68,12 +77,8 @@ def main():
         elif o == "-r":
             GENETIC = False
             RANDOM = True
-        elif o == "-i":
-            GENETIC = False
-            RANDOM = False
-            DEGREE = False
-            BETWEENNESS = False
-            INFO = True
+        elif o == "-s":
+            SIR = True
         elif o == "-u":
             UNDIRECT = True
             
@@ -113,6 +118,10 @@ def main():
     if RANDOM:
         random_simulations(network, target)
 
+    if SIR:
+        sir_simulations(network, target)
+        
+
 def pad_string(integer, n):
     """
     Add "0" to the front of an interger so that the resulting string in n 
@@ -133,6 +142,37 @@ def pad_string(integer, n):
         string = "0" + string
 
     return string
+
+def sir_simulations(network, targets):
+    """
+    Run an infection simulation across the network for each of the given
+    targets, and determine the median number of infected per day.
+
+    Args:
+        network: A NetworkX graph object.
+        targets: A list of initial infection targets.
+
+    Returns
+        VOID.
+
+    IO:
+        sir.csv: The proportion of a population that is infected by time step.
+    """
+
+    print("SIR Mode")
+
+    # Make a new folder for the degree data.
+    os.makedirs("sir")
+
+    iteration = 0
+    
+    for target in targets:
+
+        sir_file = "sir/sir_{0}.csv".format(pad_string(iteration,4))
+
+        results = infection(network, None, target, False, sir_file)
+        N = results["Suscceptable"] + results["Infected"] + results["Recovered"]
+        iteration += 1
 
 
 def simulation_data(network, time, targets, seed):
@@ -167,10 +207,11 @@ def simulation_data(network, time, targets, seed):
     
     # Not every vertex can lead to every other vertex.
     # Create a subgraph that can.
-    print("\tConverting to undirected.")
+    print("\tTemporarily converting to undirected.")
     undirected = network.to_undirected()
     print("\tFinding subgraphs.")
     subgraphs = nx.connected_component_subgraphs(undirected)
+
 
     # Find the number of vertices in the diameter of the network
 
@@ -646,9 +687,24 @@ def create_network(nodes, edges):
     
     G.remove_nodes_from(to_remove)
 
+
+    # Limit to the first subgraph
+    undirected = G.to_undirected()
+    subgraphs = nx.connected_component_subgraphs(undirected)
+
+    subgraph_nodes = subgraphs[0].nodes()
+
+    to_remove = list()
+
+    for node in G.nodes():
+        if node not in subgraph_nodes:
+            to_remove.append(node)
+            
+    G.remove_nodes_from(to_remove)
+
     return G
 
-def infection(input_network, vaccination, start, visualize = False):
+def infection(input_network, vaccination, start, visualize = False, file_name = "sir.csv"):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -670,7 +726,7 @@ def infection(input_network, vaccination, start, visualize = False):
 
 
     # Open the data file
-    f = open("data.csv", "w")
+    f = open(file_name, "w")
     f.write("time, s, i, r\n")
 
     # Set the default to susceptable
@@ -730,22 +786,34 @@ def infection(input_network, vaccination, start, visualize = False):
             elif status is "i":
                 # Propogate the infection.
                 if age > 0:
-                    #print(network[node])
                     possible_victims = network[node]
 
-                    #n = int(len(possible_victims)/)
-                    
-                    #n = 3
-
-                    #if n > len(possible_victims):
-                    #    n = len(possible_victims) 
-
-                    #victims = random.sample(possible_victims, n)
                     victims = possible_victims
+                    
+                    # Calculate the total out degree of all infectees
+                    total_degree = 0
+                    for victim in victims:
+                        total_degree += network.out_degree(victim)
 
+                    # Infect possible victims
                     for infectees in victims:
                         infect_status = network.node[infectees]["status"]
-                        if infect_status == "s":
+                        victim_degree = network.out_degree(infectees)
+
+                        infect = True # Set this flag to False to start 
+                                      # weighting.
+
+                        if total_degree > 0:
+                            probability_of_infection = victim_degree / \
+                                                       total_degree
+                        else:
+                            probability_of_infection = 0
+
+                        if random.uniform(0,1) <= probability_of_infection:
+
+                            infect = True
+
+                        if infect_status == "s" and infect == True:
                             network.node[infectees]["status"] = "i"
                             network.node[infectees]["age"] = 0
                             network.node[infectees]["color"] = "orange"

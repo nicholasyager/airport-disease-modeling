@@ -4,15 +4,22 @@
         margin:auto;
     }
 
+    .no_show {
+        display:none;
+    }
+
 </style>
 
 <h1>Airport Flu Modeling</h1>
 
 <h2>Methods</h2>
 
-<p>A network consisting of airports as nodes and airline routes as edges was 
-constructed with data from <a href="http://openflights.org/data">openflights.org</a> as shown in Figure 1.
-Nodes without inbound edges were removed.</p>
+<p>Using python and NetworkX, a network consisting of airports as nodes and 
+airline routes as edges was constructed with data from 
+<a href="http://openflights.org/data">openflights.org</a> as shown in Figure 1.
+Nodes without inbound edges were removed. 
+<a href="documentation/flu_simulator.html">Documentation</a> on this simulator 
+is provided in pydoc form.</p>
 
 <p><img src="documentation/images/world2-cropped.png" alt="world-network" title="Figure 1." /></p>
 
@@ -45,26 +52,32 @@ destination.</li>
 
 <p><img src="documentation/images/simple.png" alt="simple-model" title="Figure 2." /></p>
 
-<p>The complex model follows 6 rules:</p>
+<div class=no_show>
+    <p>The complex model follows 6 rules:</p>
 
-<ol>
-<li>One plane leaves on each route per hour.</li>
-<li>All routes are directional.</li>
-<li>Each airport has 10 people per route that can be either susceptible, 
-infectious, or recovered.</li>
-<li>There is a parameter &beta; for the number of people an infected person can
-infect per hour, and a parameter &gamma; for the number of hours required to 
-recover from being infectious.</li>
-<li>Each plane has 10 passengers, and will travel along its route at a speed of
-&mu; over the distance between airports.</li>
-<li>An infected individual is only capable of infecting other passengers of a 
-plane during the flight.</li>
-</ol>
+    <ol>
+    <li>One plane leaves on each route per hour.</li>
+    <li>All routes are directional.</li>
+    <li>Each airport has 10 people per route that can be either susceptible, 
+    infectious, or recovered.</li>
+    <li>There is a parameter &beta; for the number of people an infected person can
+    infect per hour, and a parameter &gamma; for the number of hours required to 
+    recover from being infectious.</li>
+    <li>Each plane has 10 passengers, and will travel along its route at a speed of
+    &mu; over the distance between airports.</li>
+    <li>An infected individual is only capable of infecting other passengers of a 
+    plane during the flight.</li>
+    </ol>
 
-<p>This model's SIR plot is as follows</p>
+    <p>This model's SIR plot is as follows</p>
 
-<p><img src="documentation/images/dummy.png" alt="complex-model" title="Figure 3." /></p>
+    <p><img src="documentation/images/dummy.png" alt="complex-model" title="Figure 3." /></p>
+
+</div>
 
 <h2>Results</h2>
 
+First, we tested quarantine strategies such as quarantining  randomly,
+in decending degree, and in order of decending betweenness centrality.
 
+<p><img src="documentation/images/ANOVA-comparison-directed.png" title="Figure 3." /></p>
