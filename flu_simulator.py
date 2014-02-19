@@ -355,6 +355,13 @@ def degree_simulations(network, targets):
             results = infection(network, strategy, target, False)
             total_infected = results["Infected"] + results["Recovered"]
             degree_file.write("{0},{1}\n".format(effort/100,total_infected))
+
+            if total_infected == 1:
+                for remaining_effort in range(effort+5,101,5):
+                    degree_file.write("{0},{1}\n".format(remaining_effort/100,
+                                                         total_infected))
+                break
+
         
         iteration += 1
         degree_file.close()
@@ -414,6 +421,12 @@ def betweenness_simulations(network,targets):
             results = infection(network, strategy, target, False)
             total_infected = results["Infected"] + results["Recovered"]
             betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
+            
+            if total_infected == 1:
+                for remaining_effort in range(effort+5,101,5):
+                    betweenness_file.write("{0},{1}\n".format(remaining_effort/100,
+                                                              total_infected))
+                break
 
         iteration += 1
         betweenness_file.close()
