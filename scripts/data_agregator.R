@@ -56,7 +56,16 @@ abline(h=0, lty="dotted")
 data = as.data.frame(cbind(effort, medians/3308))
 names(data) <- c("Effort", "Median")
 
+# A nice distribution graph -------------------------------------------
 
+boxplot(random,
+        main="Distribution of infeceted individuals\nfor a random quaratine strategy",
+        xlab="Quarantine Effort", ylab="Number of infected airports",
+        xaxt = "n")
+
+axis(1,1:21, seq(0,100,5))
+lines(apply(random, 2, mean), col="red")
+lines(apply(random, 2, median), col="blue")
 
 write.csv(data, "random.csv", row.names=F)
 write.matrix(random, "random.matrix", sep=",")

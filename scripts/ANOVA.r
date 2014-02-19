@@ -68,7 +68,7 @@ text(x=as.vector(bp),y=as.vector(M)+CI95,c("A","A","A",
 abline(h=0)
 
 
-# Comparison of directed and undirected
+# Comparison of directed and undirected -------------------------------------
 BD <- as.data.frame(read.csv("directed/betweenness.matrix",header=F))
 BU <- as.data.frame(read.csv("undirected/betweenness.matrix",header=F))
 
