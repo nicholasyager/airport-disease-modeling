@@ -758,10 +758,14 @@ def infection(input_network, vaccination, start, visualize = False, file_name = 
         for node in vaccination:
             if node != start:
                 # Get the node's predecessors and sucessors
-                remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
-                remove_successors = [ (suc, node) for suc in network.successors(node)]
-                network.remove_edges_from(remove_predecessors)
-                network.remove_edges_from(remove_successors)
+                if isinstance(network,nx.DiGraph):
+                    remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
+                    remove_successors = [ (suc, node) for suc in network.successors(node)]
+                    network.remove_edges_from(remove_predecessors)
+                    network.remove_edges_from(remove_successors)
+                else:
+                    remove_neighbors = [ (suc, node) for suc in network.neighbors(node)]
+                    network.remove_edges_from(remove_neighbors)
                 network.node[node]["status"] = 'v'
 
     # Assign the infected
@@ -769,11 +773,19 @@ def infection(input_network, vaccination, start, visualize = False, file_name = 
     network.node[infected]["status"] = "i"
     network.node[infected]["color"]  = "orange"
 
-    in_degree = network.in_degree()[infected] 
-    out_degree = network.out_degree()[infected]
+
+
     print("\tInitial vector: "+network.node[infected]["name"])
-    print("\tIn degree: ",in_degree)
-    print("\tOut degree:",out_degree)
+    if isinstance(network,nx.DiGraph):
+        in_degree = network.in_degree()[infected] 
+        out_degree = network.out_degree()[infected]
+        print("\tIn degree: ",in_degree)
+        print("\tOut degree:",out_degree)
+
+    else:
+        degree = network.degree()[infected]
+        print("\tDegree: ",degree)
+
     if vaccination is not None:
         print("\tVaccinated: ", len(vaccination) )
     else: 
@@ -809,12 +821,14 @@ def infection(input_network, vaccination, start, visualize = False, file_name = 
                     # Calculate the total out degree of all infectees
                     total_degree = 0
                     for victim in victims:
-                        total_degree += network.out_degree(victim)
+                        # degree() == out_degree()
+                        total_degree += network.degree(victim)
 
                     # Infect possible victims
                     for infectees in victims:
                         infect_status = network.node[infectees]["status"]
-                        victim_degree = network.out_degree(infectees)
+                        #degree() == out_degree()
+                        victim_degree = network.degree(infectees)
 
                         infect = True # Set this flag to False to start 
                                       # weighting.
