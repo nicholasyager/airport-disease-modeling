@@ -8,6 +8,20 @@
         display:none;
     }
 
+    code {
+
+        font-family: "Lucida Console", Monaco, monospace;
+        font-size: 10pt;
+        padding:10px;
+        display: block;
+
+    }
+    code table {
+        text-align:right;
+        font-size: 10pt;
+        padding:10px;
+    }
+
 </style>
 
 <h1>Airport Flu Modeling</h1>
@@ -77,17 +91,130 @@ destination.</li>
 
 <h2>Results</h2>
 
-First, we examined the median SIR response for 100 initial infection sites, each
+First, we examined the median SIR response for 343 initial infection sites, each
 chosen randomly.
 
-<p><img src="documentation/images/Median-SIR.png" title="Figure 3." /></p>
+<p><img src="documentation/images/Directed_Median_SIR.png" title="Figure 3." /></p>
 
 From this, we found that an infection through our network required around three
 ticks to have a noticable amount of infections. We also found that the infection
-peaks around the nine tick mark, and fully disapates in 15 ticks.
+peaks around the nine tick mark, and fully disapates in 15 ticks. We then 
+decided to test if there was a difference in out network if it behaved as a 
+directed network or a undirected network. Using the method described above, we
+constructed a median SIR plot for the undireced network.
 
-We then tested three quarantine strategies: quarantining  randomly,
-in decending degree, and in order of decending betweenness centrality.
+<p><img src="documentation/images/Undirected_Median_SIR.png" title="Figure 4." /></p>
+
+As you can see, the two plots are nearly identical, suggesting that due to the
+reciprical routes of the network, the directed network behaves similarly to 
+undirected form of the network. We decided to test this idea further by running
+a series of quaratine efforts based on betweenness centrality for both the
+directed and undirected networks, and performed an ANOVA test on the data
+collected.
+
+<code>
+<table>
+    <tr>
+        <th style="text-align:left;">Treatment</th>
+        <th>Df</th>
+        <th>Sum Sq</th>  
+        <th>Mean Sq</th>
+        <th>F value</th>
+        <th>Pr(F)</th>
+    </tr>
+    <tr>
+        <td style="text-align:left;" >Network Type</td>
+        <td>1</td>
+        <td>88498</td>
+        <td>88498</td>
+        <td>0.274</td>
+        <td>0.601</td>
+    </tr>
+    <tr>
+        <td  style="text-align:left;">Effort</td>
+        <td>4</td>
+        <td>813674670</td>
+        <td>203418668</td> 
+        <td>628.963</td>
+        <td>2e-16 ***</td>
+    </tr>
+    <tr>
+        <td style="text-align:left;" >Network Type : Effort</td>
+        <td>4</td>    
+        <td>264482</td>     
+        <td>66121</td>   
+        <td>0.204</td>
+        <td>0.936</td>
+    </tr>
+    <tr>
+        <td  style="text-align:left;">Residuals</td>              
+        <td>490</td> 
+        <td>158475453</td>    
+        <td>323419</td>
+    <tr>
+</table>
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+</code>
+
+This ANOVA was then used in a Tukey HSD and we found that there is no 
+statistical difference between a directed and undirected network.
+
+<p><img src="documentation/images/ANOVA-network-types.png" title="Figure 4." /></p>
+
+Using the directed network, we then tested three quarantine strategies:
+quarantining  randomly, in decending degree, and in order of decending 
+betweenness centrality. We used the collected data in an ANOVA test, and found
+significance in effort, quarantine type, and the interactions of both effort and
+quarantine type. We found the greatest gains with a 5% quarantine effort of the
+airports with the highest betweenness centrality
+
+<code>
+<table>
+    <tr>
+        <th style="text-align:left;">Treatment</th>
+        <th>Df</th>
+        <th>Sum Sq</th>  
+        <th>Mean Sq</th>
+        <th>F value</th>
+        <th>Pr(F)</th>
+    </tr>
+    <tr>
+        <td style="text-align:left;" >Effort</td>
+        <td>4</td>
+        <td>675706897</td>
+        <td>168926724</td>
+        <td>556.17</td>
+        <td>2e-16 ***</td>
+    </tr>
+    <tr>
+        <td  style="text-align:left;">Quarantine Type</td>
+        <td>2</td>
+        <td>276498032</td>
+        <td>138249016</td> 
+        <td>455.17</td>
+        <td>2e-16 ***</td>
+    </tr>
+    <tr>
+        <td style="text-align:left;" >Network Type : Effort</td>
+        <td>8</td>    
+        <td>181062773</td>     
+        <td>22632847</td>   
+        <td>74.52</td>
+        <td>2e-16 ***</td>
+    </tr>
+    <tr>
+        <td  style="text-align:left;">Residuals</td>              
+        <td>735</td> 
+        <td>223244112</td>    
+        <td>303733</td>
+    <tr>
+</table>
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+</code>
+
+We used the ANOVA data and performed a Tukey HSD (Honest Significant Dfference)
+test, the results of which can be found below.
 
 <p><img src="documentation/images/ANOVA-comparison-directed.png" title="Figure 4." /></p>
 

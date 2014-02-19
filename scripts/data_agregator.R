@@ -36,7 +36,7 @@ read_to_M <- function(filelist) {
 }
 
 
-random <- read_to_M(dir("betweenness",full.names=T))
+random <- read_to_M(dir("random",full.names=T))
 
 # Each Row is a data set for an effort. use accordingly.
 
@@ -59,9 +59,9 @@ names(data) <- c("Effort", "Median")
 
 
 write.csv(data, "random.csv", row.names=F)
-write.matrix(random, "degree.matrix", sep=",")
+write.matrix(random, "random.matrix", sep=",")
 
-image(M, col=rainbow(3000))
+image(random, col=rainbow(3000))
 # 
 # 
 #  barplot(medians/3307,
