@@ -28,12 +28,15 @@ import copy
 import getopt
 import math
 import networkx as nx
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap as Basemap
 import operator
 import os
 import random
 import sys 
 import time
 
+global VISUALIZE
 
 def main():
     """
@@ -49,12 +52,13 @@ def main():
     """
    
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "bgdrus", ["Betweenness",
+    opts, args = getopt.getopt(sys.argv[1:], "bgdrusv", ["Betweenness",
                                                             "Genetic",
                                                             "Degree",
                                                             "Random",
                                                             "Undirect",
-                                                            "SIR"])
+                                                            "SIR",
+                                                            "visualize"])
 
     GENETIC = False 
     BETWEENNESS = False 
@@ -62,6 +66,7 @@ def main():
     RANDOM = False 
     SIR = False
     UNDIRECT = False
+    VISUALIZE = False
 
     for o, a in opts:
         if o == "-g":
@@ -81,11 +86,14 @@ def main():
             SIR = True
         elif o == "-u":
             UNDIRECT = True
+        elif o == "-v":
+            VISUALIZE = True
             
     AIRPORT_DATA = args[0]
     ROUTE_DATA = args[1]
 
-    NUM_SIMULATIONS = 344
+    #NUM_SIMULATIONS = 344
+    NUM_SIMULATIONS = 3
 
     seed = 100
 
@@ -110,16 +118,16 @@ def main():
         genetic_simulations(network, 50, 50, target)
 
     if BETWEENNESS:
-        betweenness_simulations(network, target)
+        betweenness_simulations(network, target, VISUALIZE)
     
     if DEGREE:
-        degree_simulations(network, target)
+        degree_simulations(network, target, VISUALIZE)
 
     if RANDOM:
-        random_simulations(network, target)
+        random_simulations(network, target, VISUALIZE)
 
     if SIR:
-        sir_simulations(network, target)
+        sir_simulations(network, target, VISUALIZE)
         
 
 def pad_string(integer, n):
@@ -143,7 +151,7 @@ def pad_string(integer, n):
 
     return string
 
-def sir_simulations(network, targets):
+def sir_simulations(network, targets, VISUALIZE):
     """
     Run an infection simulation across the network for each of the given
     targets, and determine the median number of infected per day.
@@ -170,7 +178,7 @@ def sir_simulations(network, targets):
 
         sir_file = "sir/sir_{0}.csv".format(pad_string(iteration,4))
 
-        results = infection(network, None, target, False, sir_file)
+        results = infection(network, None, target, VISUALIZE, sir_file )
         N = results["Suscceptable"] + results["Infected"] + results["Recovered"]
         iteration += 1
 
@@ -256,7 +264,7 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets):
+def random_simulations(network, targets, VISUALIZE):
     """
     Simulate the spread of infection for increasing vaccination efforts by
     quarantining airports randomly.
@@ -286,18 +294,18 @@ def random_simulations(network, targets):
 
 
         # Generate a baseline
-        results = infection(network, None, target, False)
+        results = infection(network, None, target, VISUALIZE, title="Random - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         random_file.write("{0},{1}\n".format(0,total_infected))
 
         randoms = random.sample(network.nodes(), len(network.nodes()))
 
         # Perform a check for every strategy
-        for effort in range(1,101,5):
+        for effort in range(1,41,5):
             max_index = int(len(randoms) * (effort/100))-1
             strategy = [x for x in randoms[0:max_index]]
-
-            results = infection(network, strategy, target, False)
+            title = "random - {0}%".format(effort/100)
+            results = infection(network, strategy, target, VISUALIZE,title=title)
             total_infected = results["Infected"] + results["Recovered"]
             random_file.write("{0},{1}\n".format(effort/100,total_infected))
         
@@ -306,7 +314,7 @@ def random_simulations(network, targets):
 
 
 
-def degree_simulations(network, targets):
+def degree_simulations(network, targets, VISUALIZE):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing degree.
@@ -343,16 +351,17 @@ def degree_simulations(network, targets):
 
 
         # Generate a baseline
-        results = infection(network, None, target, False)
+        results = infection(network, None, target, VISUALIZE, title="degree - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         degree_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
-        for effort in range(1,101,5):
+        for effort in range(1,41,5):
             max_index = int(len(degree) * (effort/100))-1
             strategy = [x for x in degree[0:max_index]]
+            title = "degree - {0}%".format(effort/100)
 
-            results = infection(network, strategy, target, False)
+            results = infection(network, strategy, target, VISUALIZE, title=title)
             total_infected = results["Infected"] + results["Recovered"]
             degree_file.write("{0},{1}\n".format(effort/100,total_infected))
 
@@ -367,7 +376,7 @@ def degree_simulations(network, targets):
         degree_file.close()
 
 
-def betweenness_simulations(network,targets):
+def betweenness_simulations(network,targets, VISUALIZE):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
@@ -409,16 +418,17 @@ def betweenness_simulations(network,targets):
         betweenness_file.write('"effort","total_infected"\n')
 
         # Generate a baseline
-        results = infection(network, None, target, False)
+        results = infection(network, None, target, VISUALIZE,title="Betweenness - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         betweenness_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
-        for effort in range(1,101,5):
+        for effort in range(1,41,5):
             max_index = int(len(betweenness) * (effort/100))-1
             strategy = [x for x in betweenness[0:max_index]]
 
-            results = infection(network, strategy, target, False)
+            title = "betweenness - {0}%".format(effort/100)
+            results = infection(network, strategy, target, VISUALIZE,title= title)
             total_infected = results["Infected"] + results["Recovered"]
             betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
             
@@ -720,7 +730,7 @@ def create_network(nodes, edges):
 
     return G
 
-def infection(input_network, vaccination, start, visualize = False, file_name = "sir.csv"):
+def infection(input_network, vaccination, start, vis = False, file_name = "sir.csv", title=""):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -791,9 +801,7 @@ def infection(input_network, vaccination, start, visualize = False, file_name = 
     else: 
         print("\tVaccinated: None")
 
-    if visualize:
-        # Calculate the layout of the network to ensure even plotting.
-        pos = nx.spring_layout(network)
+    pos = nx.spring_layout(network, scale=2)
 
     # Iterate through the evolution of the disease.
     for step in range(0,99):
@@ -878,34 +886,69 @@ def infection(input_network, vaccination, start, visualize = False, file_name = 
         if I is 0:
             break
 
-        if visualize:
-            visualize(network, pos)
+    if vis:
+        #write_dot(network, title+".dot")
+        visualize(network, title, pos)
         
     print("\t----------\n\tS: {0}, I: {1}, R: {2}".format(S,I,R))
 
     return {"Suscceptable":S,"Infected":I, "Recovered":R}
 
        
-def visualize(network, pos):
+def visualize(network, title,pos):
     """
     Visualize the network given an array of posisitons.
     """
+
+    MAP = False
+
+    if MAP:
+        m = Basemap(
+            projection='cea',
+            llcrnrlat=-90, urcrnrlat=90,
+            llcrnrlon=-180, urcrnrlon=180,
+            resolution=None
+            )
+
+        pos = dict()
+
+        for pos_node in network.nodes():
+            # Normalize the lat and lon values
+            x,y = m(float(network.node[pos_node]['lon']),
+                    float(network.node[pos_node]['lat']))
+        
+            pos[pos_node] = [x,y]
+
+
+    # Remove nodes without inbound edges
+    indeg = network.in_degree()
+    outdeg = network.out_degree()
+    to_remove = [n for n in indeg if (indeg[n] + outdeg[n] < 1)]
+    
+    network.remove_nodes_from(to_remove)
+
+
     colors = []
     for node in network.nodes():
         colors.append(network.node[node]["color"])
 
     plt.figure(figsize=(8,8))
 
+    nx.draw_networkx_edges(network,pos,
+            width=1,
+            edge_color='black',
+            arrows=False)
     nx.draw_networkx_nodes(network,
             pos,
-            node_size=25,
+            node_size=10,
             with_labels=False,
             node_color = colors)
 
-    nx.draw_networkx_edges(network,pos,
-                           width=1,
-                           edge_color='black',
-                           arrows=False)
+
+    if MAP:
+        # Draw the map
+        m.bluemarble()
+    plt.title=title
 
     plt.axis('off')
 
@@ -917,6 +960,29 @@ def visualize(network, pos):
     plt.savefig("infection-{0}.png".format(number_files),
                 bbox_inches='tight', dpi=100 
             )
+    plt.close()
+
+def write_dot(network, path):
+    """
+    Write a DOT file for external network rendering. This function is necessary
+    due to networkx incompentence.
+
+    Args:
+        network: A NetworkX graph object.
+        path: A local path for the output file.
+    """
+
+    dot_file = open(path, "w")
+
+    # Write header info
+    dot_file.write("digraph network {\n")
+    
+    for node in network.nodes():
+        neighbors = network.neighbors(node)
+        for neighbor in neighbors:
+            dot_file.write("\t{0} -> {1};\n".format(node, neighbor))
+
+    dot_file.write("}")
 
 if __name__ == "__main__":
     main()
