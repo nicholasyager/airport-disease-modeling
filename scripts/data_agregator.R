@@ -36,7 +36,7 @@ read_to_M <- function(filelist) {
 }
 
 
-random <- read_to_M(dir("random",full.names=T))
+random <- read_to_M(dir("degree",full.names=T))
 
 # Each Row is a data set for an effort. use accordingly.
 
@@ -45,9 +45,9 @@ random <- read_to_M(dir("random",full.names=T))
 medians = apply(random, 2, median)
 
 effort = seq(0, 100, 5)
-plot(effort, medians/3308,
+plot(x=effort, y=medians/3308,
      main="Effect of quarantine strategies on median number of infections",
-     xlab="Betweenness-based quarantine effort (%)",
+     xlab="Degree-based quarantine effort (%)",
      ylab="Proportion of airports infected", pch=19, type="b",
      ylim=c(0,1))
 
@@ -59,7 +59,7 @@ names(data) <- c("Effort", "Median")
 # A nice distribution graph -------------------------------------------
 
 boxplot(random,
-        main="Distribution of infeceted individuals\nfor a random quaratine strategy",
+        main="Distribution of infeceted individuals\nfor a degree-based quaratine strategy",
         xlab="Quarantine Effort", ylab="Number of infected airports",
         xaxt = "n")
 

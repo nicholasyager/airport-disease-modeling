@@ -52,13 +52,14 @@ def main():
     """
    
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "bgdrusv", ["Betweenness",
+    opts, args = getopt.getopt(sys.argv[1:], "bgdrusve", ["Betweenness",
                                                             "Genetic",
                                                             "Degree",
                                                             "Random",
                                                             "Undirect",
                                                             "SIR",
-                                                            "visualize"])
+                                                            "visualize",
+                                                            "byedge"])
 
     GENETIC = False 
     BETWEENNESS = False 
@@ -67,6 +68,7 @@ def main():
     SIR = False
     UNDIRECT = False
     VISUALIZE = False
+    EDGES = False
 
     for o, a in opts:
         if o == "-g":
@@ -88,12 +90,14 @@ def main():
             UNDIRECT = True
         elif o == "-v":
             VISUALIZE = True
+        elif o == "-e":
+            EDGES = True
             
     AIRPORT_DATA = args[0]
     ROUTE_DATA = args[1]
 
     #NUM_SIMULATIONS = 344
-    NUM_SIMULATIONS = 3
+    NUM_SIMULATIONS = 100
 
     seed = 100
 
@@ -118,16 +122,16 @@ def main():
         genetic_simulations(network, 50, 50, target)
 
     if BETWEENNESS:
-        betweenness_simulations(network, target, VISUALIZE)
+        betweenness_simulations(network, target, VISUALIZE, EDGES)
     
     if DEGREE:
-        degree_simulations(network, target, VISUALIZE)
+        degree_simulations(network, target, VISUALIZE, EDGES)
 
     if RANDOM:
-        random_simulations(network, target, VISUALIZE)
+        random_simulations(network, target, VISUALIZE, EDGES)
 
     if SIR:
-        sir_simulations(network, target, VISUALIZE)
+        sir_simulations(network, target, VISUALIZE, EDGES)
         
 
 def pad_string(integer, n):
@@ -264,7 +268,7 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets, VISUALIZE):
+def random_simulations(network, targets, VISUALIZE, EDGES):
     """
     Simulate the spread of infection for increasing vaccination efforts by
     quarantining airports randomly.
@@ -301,20 +305,31 @@ def random_simulations(network, targets, VISUALIZE):
         randoms = random.sample(network.nodes(), len(network.nodes()))
 
         # Perform a check for every strategy
-        for effort in range(1,41,5):
-            max_index = int(len(randoms) * (effort/100))-1
-            strategy = [x for x in randoms[0:max_index]]
+        for effort in range(1,101,5):
+            if EDGES:
+                max_index = int(len(network.edges()) * (effort/100))-1
+                strategy = network.edges(randoms)[0:max_index]
+            else:
+                max_index = int(len(randoms) * (effort/100))-1
+                strategy = [x for x in randoms[0:max_index]]
             title = "random - {0}%".format(effort/100)
-            results = infection(network, strategy, target, VISUALIZE,title=title)
+            results = infection(network, strategy, target, VISUALIZE,
+                                title=title, inf_type=EDGES)
             total_infected = results["Infected"] + results["Recovered"]
             random_file.write("{0},{1}\n".format(effort/100,total_infected))
-        
+     
+            if total_infected == 1:
+                for remaining_effort in range(effort+5,101,5):
+                    random_file.write("{0},{1}\n".format(remaining_effort/100,
+                                                         total_infected))
+                break
+   
         iteration += 1
         random_file.close()
 
 
 
-def degree_simulations(network, targets, VISUALIZE):
+def degree_simulations(network, targets, VISUALIZE, EDGES):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing degree.
@@ -356,12 +371,21 @@ def degree_simulations(network, targets, VISUALIZE):
         degree_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
-        for effort in range(1,41,5):
-            max_index = int(len(degree) * (effort/100))-1
-            strategy = [x for x in degree[0:max_index]]
+        for effort in range(1,101,5):
+            if EDGES:
+                max_index = int(len(network.edges()) * (effort/100))-1
+                strategy = network.edges(degree)[0:max_index]
+
+            else:
+                max_index = int(len(degree) * (effort/100))-1
+                strategy = [x for x in degree[0:max_index]]
+            
+
             title = "degree - {0}%".format(effort/100)
 
-            results = infection(network, strategy, target, VISUALIZE, title=title)
+            results = infection(network, strategy, target, VISUALIZE, 
+                                title=title, 
+                                inf_type=EDGES)
             total_infected = results["Infected"] + results["Recovered"]
             degree_file.write("{0},{1}\n".format(effort/100,total_infected))
 
@@ -376,7 +400,7 @@ def degree_simulations(network, targets, VISUALIZE):
         degree_file.close()
 
 
-def betweenness_simulations(network,targets, VISUALIZE):
+def betweenness_simulations(network,targets, VISUALIZE, EDGES):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
@@ -396,7 +420,10 @@ def betweenness_simulations(network,targets, VISUALIZE):
     print("Betweenness Centrality Mode.")
     print("\tCalculating betweenness centrality", end="")
     sys.stdout.flush()
-    betweennesses = nx.betweenness_centrality(network)
+    if EDGES:
+        betweennesses = nx.edge_betweenness_centrality(network)
+    else:
+        betweennesses = nx.betweenness_centrality(network)
     betweenness = sorted(betweennesses.keys(), 
                     key=lambda k: betweennesses[k], reverse=True)
 
@@ -423,12 +450,13 @@ def betweenness_simulations(network,targets, VISUALIZE):
         betweenness_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
-        for effort in range(1,41,5):
+        for effort in range(1,101,5):
             max_index = int(len(betweenness) * (effort/100))-1
             strategy = [x for x in betweenness[0:max_index]]
 
             title = "betweenness - {0}%".format(effort/100)
-            results = infection(network, strategy, target, VISUALIZE,title= title)
+            results = infection(network, strategy, target, VISUALIZE,title= title,
+                                inf_type=EDGES)
             total_infected = results["Infected"] + results["Recovered"]
             betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
             
@@ -730,7 +758,7 @@ def create_network(nodes, edges):
 
     return G
 
-def infection(input_network, vaccination, start, vis = False, file_name = "sir.csv", title=""):
+def infection(input_network, vaccination, start, vis = False, file_name = "sir.csv", title="", inf_type=False):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -764,19 +792,22 @@ def infection(input_network, vaccination, start, vis = False, file_name = "sir.c
     
     # Add in the recovering
     if vaccination is not None:
-        vaccination = sorted(vaccination)
-        for node in vaccination:
-            if node != start:
-                # Get the node's predecessors and sucessors
-                if isinstance(network,nx.DiGraph):
-                    remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
-                    remove_successors = [ (suc, node) for suc in network.successors(node)]
-                    network.remove_edges_from(remove_predecessors)
-                    network.remove_edges_from(remove_successors)
-                else:
-                    remove_neighbors = [ (suc, node) for suc in network.neighbors(node)]
-                    network.remove_edges_from(remove_neighbors)
-                network.node[node]["status"] = 'v'
+        if inf_type:
+            network.remove_edges_from(vaccination)
+        else:
+            vaccination = sorted(vaccination)
+            for node in vaccination:
+                if node != start:
+                    # Get the node's predecessors and sucessors
+                    if isinstance(network,nx.DiGraph):
+                        remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
+                        remove_successors = [ (suc, node) for suc in network.successors(node)]
+                        network.remove_edges_from(remove_predecessors)
+                        network.remove_edges_from(remove_successors)
+                    else:
+                        remove_neighbors = [ (suc, node) for suc in network.neighbors(node)]
+                        network.remove_edges_from(remove_neighbors)
+                    network.node[node]["status"] = 'v'
 
     # Assign the infected
     infected = start
@@ -801,7 +832,8 @@ def infection(input_network, vaccination, start, vis = False, file_name = "sir.c
     else: 
         print("\tVaccinated: None")
 
-    pos = nx.spring_layout(network, scale=2)
+    if vis:
+        pos = nx.spring_layout(network, scale=2)
 
     # Iterate through the evolution of the disease.
     for step in range(0,99):
