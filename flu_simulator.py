@@ -427,6 +427,8 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES):
     betweenness = sorted(betweennesses.keys(), 
                     key=lambda k: betweennesses[k], reverse=True)
 
+    print(betweenness)
+
     print("\t\t\t\t[Done]")
 
 
