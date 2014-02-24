@@ -35,8 +35,9 @@ read_to_M <- function(filelist) {
   return(M)
 }
 
+type = "random"
 
-random <- read_to_M(dir("degree",full.names=T))
+random <- read_to_M(dir(type,full.names=T))
 
 # Each Row is a data set for an effort. use accordingly.
 
@@ -47,7 +48,7 @@ medians = apply(random, 2, median)
 effort = seq(0, 100, 5)
 plot(x=effort, y=medians/3308,
      main="Effect of quarantine strategies on median number of infections",
-     xlab="Degree-based quarantine effort (%)",
+     xlab=paste(type,"-based quarantine effort (%)",sep=""),
      ylab="Proportion of airports infected", pch=19, type="b",
      ylim=c(0,1))
 
@@ -59,7 +60,7 @@ names(data) <- c("Effort", "Median")
 # A nice distribution graph -------------------------------------------
 
 boxplot(random,
-        main="Distribution of infeceted individuals\nfor a degree-based quaratine strategy",
+        main=paste("Distribution of infeceted individuals\nfor a ",type,"-based quaratine strategy",sep=""),
         xlab="Quarantine Effort", ylab="Number of infected airports",
         xaxt = "n")
 
@@ -67,10 +68,10 @@ axis(1,1:21, seq(0,100,5))
 lines(apply(random, 2, mean), col="red")
 lines(apply(random, 2, median), col="blue")
 
-write.csv(data, "random.csv", row.names=F)
-write.matrix(random, "random.matrix", sep=",")
+write.csv(data, paste(type,".csv",sep=""), row.names=F)
+write.matrix(random, paste(type,".matrix",sep=""), sep=",")
 
-image(random, col=rainbow(3000))
+#image(random, col=rainbow(3000))
 # 
 # 
 #  barplot(medians/3307,
