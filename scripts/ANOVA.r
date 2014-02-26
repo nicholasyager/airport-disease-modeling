@@ -32,8 +32,8 @@ for (i in c(1,2,3,4,5)) {
   }
 }
 
-data.stacked <- r
-names(data.stacked) <- c("qtype","effort","infected")
+-data.stacked <- r
+-names(data.stacked) <- c("qtype","effort","infected")
 
 #data.stacked = stack(data)
 
