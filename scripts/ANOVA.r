@@ -7,25 +7,25 @@ B <- as.data.frame(read.csv("betweenness.matrix",header=F))
 
 r <- data.frame()
 k = 1
-for (i in c(1,2,3,4,5)) {
+for (i in c(1,3,5,7,8)) {
   for (j in 1:50) {
-    r[k,1] <- "random"
+    r[k,1] <- 1
     r[k,2] <- as.character((i-1)*5)
     r[k,3] <- R[j,i]
     k = k + 1
   }
 }
-for (i in c(1,2,3,4,5)) {
+for (i in c(1,3,5,7,8)) {
   for (j in 1:50) {
-    r[k,1] <- "degree"
+    r[k,1] <- 2
     r[k,2] <- as.character((i-1)*5)
     r[k,3] <- D[j,i]
     k = k + 1
   }
 }
-for (i in c(1,2,3,4,5)) {
+for (i in c(1,3,5,7,8)) {
   for (j in 1:50) {
-    r[k,1] <- "betweenness"
+    r[k,1] <- 3
     r[k,2] <- as.character((i-1)*5)
     r[k,3] <- B[j,i]
     k = k + 1
@@ -37,16 +37,18 @@ names(data.stacked) <- c("qtype","effort","infected")
 
 #data.stacked = stack(data)
 
+
 tx <- with(data.stacked, interaction(effort, qtype))
+#analysis <- kruskal.test(data.stacked$infected, ")
 
-data.aov = aov(data.stacked$infected~data.stacked$effort*data.stacked$qtype)
-data.aov.tk = aov(data.stacked$infected~tx)
-summary(data.aov)
-TukeyHSD(data.aov)
-
-library(multcomp)
-
-data <- HSD.test(data.aov, "tx" ,group=T)
+# 
+# data.aov = aov(data.stacked$infected~data.stacked$effort*data.stacked$qtype)
+ data.aov.tk = aov(data.stacked$infected~tx)
+ summary(data.aov)
+ TukeyHSD(data.aov)
+# 
+# library(multcomp)
+data <- HSD.test(data.aov.tk, "tx" ,group=T)
 
 M <- tapply(data.stacked$infected,list(data.stacked$qtype, data.stacked$effort),median)
 M <- M[,order(M[2,],decreasing=T)]
@@ -54,16 +56,16 @@ M <- M[,order(M[2,],decreasing=T)]
 CI95 = qt(1-0.05/2,9)*(sd(data.stacked$infected)/sqrt(length(data.stacked$infected)))
 
 bp = barplot(M,beside=T, 
-             xlab="Quarantine Effort (% of airports closed)", ylab="Number of infected airports",
+             xlab="Quarantine Effort (% of airports closed)", yla
+             b="Number of infected airports",
              main="Comparison of quarantine strategies",
-             ylim=c(0,4500))
-legend(x=16.1,y=4500, legend=c("Betweenness","Degree","Random"), fill=c("gray30","gray60","gray90"), cex=0.75)
+             ylim=c(0,5000))
+legend(x=12.3,y=5000, legend=c("Random","Degree","Betweenness"), fill=c("gray30","gray60","gray90"), cex=0.75)
 plotCI(bp, M, CI95, add=T, pch=NA)
-text(x=as.vector(bp),y=as.vector(M)+CI95,c("A","A","A",
-                                           "B","AB","A",
-                                           "E","D","AB",
-                                           "FG","F","BC",
-                                           "FG","G","C"), pos=3,cex=0.8)
+#text(x=as.vector(bp),y=as.vector(M)+CI95,c("A","A","A",
+#                                           "B","AB","AB",
+#                                           "DE","AB","C",
+#                                           "E","AB","CD"), pos=3,cex=0.8)
 
 abline(h=0)
 

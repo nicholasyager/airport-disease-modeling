@@ -33,7 +33,8 @@ from mpl_toolkits.basemap import Basemap as Basemap
 import operator
 import os
 import random
-import sys 
+import sys
+from scipy import stats
 import time
 
 global VISUALIZE
@@ -105,7 +106,19 @@ def main():
 
     # Create the network using the command arguments.
     network = create_network(AIRPORT_DATA, ROUTE_DATA)
-    target = random.sample(network.nodes(), NUM_SIMULATIONS)
+  
+    degrees = network.degree() 
+    weights = dict()
+    for airport, degree in degrees.items():
+        weights[airport] = network.out_degree(airport) +\
+                           network.in_degree(airport)
+
+    target = list()
+    for ind in range(0,NUM_SIMULATIONS):
+        target_round = list()
+        for second_ind in range(0,10):
+             target_round.append(weighted_random(weights))
+        target.append(target_round)
 
     if UNDIRECT:
         network = network.to_undirected()
@@ -132,7 +145,14 @@ def main():
 
     if SIR:
         sir_simulations(network, target, VISUALIZE, EDGES)
-        
+
+def weighted_random(weights):
+    number = random.random() * sum(weights.values())
+    for k,v in weights.items():
+        if number <= v:
+            break
+        number -= v
+    return k
 
 def pad_string(integer, n):
     """
@@ -155,7 +175,7 @@ def pad_string(integer, n):
 
     return string
 
-def sir_simulations(network, targets, VISUALIZE):
+def sir_simulations(network, targets, VISUALIZE, EDGES):
     """
     Run an infection simulation across the network for each of the given
     targets, and determine the median number of infected per day.
@@ -179,7 +199,7 @@ def sir_simulations(network, targets, VISUALIZE):
     iteration = 0
     
     for target in targets:
-
+        print(target)
         sir_file = "sir/sir_{0}.csv".format(pad_string(iteration,4))
 
         results = infection(network, None, target, VISUALIZE, sir_file )
@@ -205,7 +225,30 @@ def simulation_data(network, time, targets, seed):
     """
 
     print("\tWriting graph edgelist")
-    nx.write_edgelist(network, "network.edgelist", data=False)
+
+    print("\tCalculating edge betweenness centrality")
+    edge_betweenness = nx.edge_betweenness_centrality(network)
+    print(edge_betweenness)
+
+    edgelist = open("edgelist.csv", "w")
+    edgelist.write('"IATA_From","IATA_To","Edge_Betweenness"\n')
+
+    for edge in network.edges():
+        from_vertex = edge[0]
+        to_vertex = edge[1]
+
+        # Collect data
+        IATAFrom = network[from_vertex][to_vertex]['IATAFrom']
+        IATATo = network[from_vertex][to_vertex]['IATATo']
+        betweenness = edge_betweenness[(from_vertex, to_vertex)]
+        edgelist.write('"{0}","{1}",{2}\n'.format(IATAFrom, 
+                                                  IATATo, 
+                                                  betweenness))
+        
+
+    edgelist.close()
+
+        
 
     print("\tDetermining network type.")
     # Determine if the graph is directed or undirected
@@ -306,12 +349,8 @@ def random_simulations(network, targets, VISUALIZE, EDGES):
 
         # Perform a check for every strategy
         for effort in range(1,101,5):
-            if EDGES:
-                max_index = int(len(network.edges()) * (effort/100))-1
-                strategy = network.edges(randoms)[0:max_index]
-            else:
-                max_index = int(len(randoms) * (effort/100))-1
-                strategy = [x for x in randoms[0:max_index]]
+            max_index = int(len(network.edges()) * (effort/100))-1
+            strategy = network.edges(randoms)[0:max_index]
             title = "random - {0}%".format(effort/100)
             results = infection(network, strategy, target, VISUALIZE,
                                 title=title, inf_type=EDGES)
@@ -362,7 +401,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
 
         # Open a file for this targ'ets dataset
         degree_file = open("degree/degree_{0}.csv".format(pad_string(iteration,4)),"w")
-        degree_file.write('"effort","total_infected"\n')
+        degree_file.write('"effort","total_infected, edges_closed"\n')
 
 
         # Generate a baseline
@@ -372,14 +411,9 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
 
         # Perform a check for every strategy
         for effort in range(1,101,5):
-            if EDGES:
-                max_index = int(len(network.edges()) * (effort/100))-1
-                strategy = network.edges(degree)[0:max_index]
-
-            else:
-                max_index = int(len(degree) * (effort/100))-1
-                strategy = [x for x in degree[0:max_index]]
-            
+            max_index = int(len(network.edges()) * (effort/100))-1
+            strategy = network.edges(degree)[0:max_index]
+            edges_closed = len(strategy)
 
             title = "degree - {0}%".format(effort/100)
 
@@ -387,7 +421,9 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
                                 title=title, 
                                 inf_type=EDGES)
             total_infected = results["Infected"] + results["Recovered"]
-            degree_file.write("{0},{1}\n".format(effort/100,total_infected))
+            degree_file.write("{0},{1}\n".format(effort/100,
+                                                 total_infected,
+                                                 edges_closed))
 
             if total_infected == 1:
                 for remaining_effort in range(effort+5,101,5):
@@ -420,10 +456,7 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES):
     print("Betweenness Centrality Mode.")
     print("\tCalculating betweenness centrality", end="")
     sys.stdout.flush()
-    if EDGES:
-        betweennesses = nx.edge_betweenness_centrality(network)
-    else:
-        betweennesses = nx.betweenness_centrality(network)
+    betweennesses = nx.edge_betweenness_centrality(network)
     betweenness = sorted(betweennesses.keys(), 
                     key=lambda k: betweennesses[k], reverse=True)
 
@@ -724,7 +757,11 @@ def create_network(nodes, edges):
                     duplicate_count += 1
                 else:
                     if line_num > 1:
-                        G.add_edge(int(entries[3]), int(entries[5]) )
+                        from_vertex = int(entries[3])
+                        to_vertex = int(entries[5])
+                        G.add_edge(from_vertex, to_vertex )
+                        G.edge[from_vertex][to_vertex]['IATAFrom'] = entries[2]
+                        G.edge[from_vertex][to_vertex]['IATATo'] = entries[4]
                         edge_count += 1
             except ValueError:
                 # The value doesn't exist
@@ -760,7 +797,7 @@ def create_network(nodes, edges):
 
     return G
 
-def infection(input_network, vaccination, start, vis = False, file_name = "sir.csv", title="", inf_type=False):
+def infection(input_network, vaccination, starts, vis = False, file_name = "sir.csv", title="", inf_type=False):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -794,40 +831,24 @@ def infection(input_network, vaccination, start, vis = False, file_name = "sir.c
     
     # Add in the recovering
     if vaccination is not None:
-        if inf_type:
-            network.remove_edges_from(vaccination)
-        else:
-            vaccination = sorted(vaccination)
-            for node in vaccination:
-                if node != start:
-                    # Get the node's predecessors and sucessors
-                    if isinstance(network,nx.DiGraph):
-                        remove_predecessors = [ (node, suc) for suc in network.predecessors(node)]
-                        remove_successors = [ (suc, node) for suc in network.successors(node)]
-                        network.remove_edges_from(remove_predecessors)
-                        network.remove_edges_from(remove_successors)
-                    else:
-                        remove_neighbors = [ (suc, node) for suc in network.neighbors(node)]
-                        network.remove_edges_from(remove_neighbors)
-                    network.node[node]["status"] = 'v'
+        network.remove_edges_from(vaccination)
 
     # Assign the infected
-    infected = start
-    network.node[infected]["status"] = "i"
-    network.node[infected]["color"]  = "orange"
+    for start in starts:
+        infected = start
+        network.node[infected]["status"] = "i"
+        network.node[infected]["color"]  = "orange"
+        print("\tInitial vector: "+network.node[infected]["name"])
 
+        if isinstance(network,nx.DiGraph):
+            in_degree = network.in_degree()[infected] 
+            out_degree = network.out_degree()[infected]
+            print("\tIn degree: ",in_degree)
+            print("\tOut degree:",out_degree)
 
-
-    print("\tInitial vector: "+network.node[infected]["name"])
-    if isinstance(network,nx.DiGraph):
-        in_degree = network.in_degree()[infected] 
-        out_degree = network.out_degree()[infected]
-        print("\tIn degree: ",in_degree)
-        print("\tOut degree:",out_degree)
-
-    else:
-        degree = network.degree()[infected]
-        print("\tDegree: ",degree)
+        else:
+            degree = network.degree()[infected]
+            print("\tDegree: ",degree)
 
     if vaccination is not None:
         print("\tVaccinated: ", len(vaccination) )
@@ -856,39 +877,41 @@ def infection(input_network, vaccination, start, vis = False, file_name = "sir.c
             elif status is "i":
                 # Propogate the infection.
                 if age > 0:
-                    possible_victims = network[node]
+                    victims = network.successors(node)
 
-                    victims = possible_victims
-                    
                     # Calculate the total out degree of all infectees
                     total_degree = 0
                     for victim in victims:
                         # degree() == out_degree()
-                        total_degree += network.degree(victim)
+                        total_degree += network.out_degree(victim)
+
 
                     # Infect possible victims
-                    for infectees in victims:
-                        infect_status = network.node[infectees]["status"]
+                    for victim in victims:
+                        infect_status = network.node[victim]["status"]
                         #degree() == out_degree()
-                        victim_degree = network.degree(infectees)
+                        victim_degree = network.out_degree(victim)
 
-                        infect = True # Set this flag to False to start 
+                        infect = False # Set this flag to False to start 
                                       # weighting.
 
                         if total_degree > 0:
-                            probability_of_infection = victim_degree / \
+                            probability_of_infection = 10 * victim_degree / \
                                                        total_degree
                         else:
                             probability_of_infection = 0
+
+                        print(victim_degree,"/", total_degree," = ",
+                              probability_of_infection)
 
                         if random.uniform(0,1) <= probability_of_infection:
 
                             infect = True
 
                         if infect_status == "s" and infect == True:
-                            network.node[infectees]["status"] = "i"
-                            network.node[infectees]["age"] = 0
-                            network.node[infectees]["color"] = "orange"
+                            network.node[victim]["status"] = "i"
+                            network.node[victim]["age"] = 0
+                            network.node[victim]["color"] = "orange"
                 network.node[node]["age"] += 1
 
         # Loop twice to prevent bias.
@@ -911,6 +934,7 @@ def infection(input_network, vaccination, start, vis = False, file_name = "sir.c
             elif status is "i":
                 
                 I += 1
+        print("{0}, {1}, {2}, {3}".format(step, S, I, R))
 
         printline = "{0}, {1}, {2}, {3}".format(step, S, I, R)
         f.write(printline + "\n")
