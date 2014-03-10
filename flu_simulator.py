@@ -370,6 +370,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES):
         for effort in range(1,101,5):
             max_index = int(len(network.edges()) * (effort/100))-1
             strategy = network.edges(randoms)[0:max_index]
+
             title = "random - {0}%".format(effort/100)
             results = infection(network, strategy, target, VISUALIZE,
                                 title=title, inf_type=EDGES)
@@ -406,14 +407,15 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
     print("Degree Mode.")
     print("\tCalculating degrees", end="")
     sys.stdout.flush()
-    degrees = network.edges()['weights']
-    print(degrees)
-    exit()
+    degrees = network.edges(data = True)
 
-    degree = sorted(degrees.keys(), key=lambda k: degrees[k], reverse=True)
+    sorted_degree = sorted(degrees, key=lambda k: k[2]['weight'], reverse=True)
+    degree = list()
+    for degree_item in sorted_degree:
+        degree.append((degree_item[0], degree_item[1]))
     print("\t\t\t\t\t[Done]")
 
-    print("\tHighest Degree:{0}".format(degrees[degree[0]]))
+    print(degree)
 
     # Make a new folder for the degree data.
     os.makedirs("degree")
@@ -434,7 +436,8 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
         # Perform a check for every strategy
         for effort in range(1,101,5):
             max_index = int(len(network.edges()) * (effort/100))-1
-            strategy = network.edges(degree)[0:max_index]
+            strategy = degree[0:max_index]
+
             edges_closed = len(strategy)
 
             title = "degree - {0}%".format(effort/100)
@@ -815,6 +818,45 @@ def create_network(nodes, edges):
             
     G.remove_nodes_from(to_remove)
 
+
+    # Add weights to edges
+    for node in G.nodes():
+        successors = G.successors(node)
+
+        # Calculate the total out degree of all succs
+        total_degree = 0
+        for successor in successors:
+  
+            try:
+                total_degree += G.out_degree(successor)
+            except TypeError:
+                # Don't add anything
+                pass
+
+        if len(successors) > 0:
+            average_degree = total_degree / len(successors)
+        else:
+            average_degree = 0
+
+        # Find the weight for all possible successors
+        for successor in successors:
+            successor_degree = G.out_degree(successor)
+
+            try:
+                int(successor_degree)
+            except TypeError:
+                successor_degree = 0
+
+            if average_degree > 0:
+                probability_of_infection = successor_degree / \
+                                           average_degree
+            else:
+                probability_of_infection = 0
+
+            G[node][successor]['weight'] = probability_of_infection
+
+
+
     return G
 
 def infection(input_network, vaccination, starts, vis = False, file_name = "sir.csv", title="", inf_type=False):
@@ -899,35 +941,13 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
                 if age > 0:
                     victims = network.successors(node)
 
-                    # Calculate the total out degree of all infectees
-                    total_degree = 0
-                    for victim in victims:
-                        # degree() == out_degree()
-                        total_degree += network.out_degree(victim)
-
-                    if len(victims) > 0:
-                        average_degree = total_degree / len(victims)
-                    else:
-                        average_degree = 0
-                    # Infect possible victims
                     for victim in victims:
                         infect_status = network.node[victim]["status"]
-                        #degree() == out_degree()
-                        victim_degree = network.out_degree(victim)
-
                         infect = False # Set this flag to False to start 
-                                      # weighting.
+                                       # weighting.
 
-                        if average_degree > 0:
-                            probability_of_infection = victim_degree / \
-                                                       average_degree
-                        else:
-                            probability_of_infection = 0
 
-                        #print(victim_degree,"/", total_degree," = ",
-                        #      probability_of_infection)
-
-                        if random.uniform(0,1) <= probability_of_infection:
+                        if random.uniform(0,1) <= network[node][victim]['weight']:
 
                             infect = True
 

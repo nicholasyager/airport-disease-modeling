@@ -35,7 +35,7 @@ read_to_M <- function(filelist) {
   return(M)
 }
 
-type = "betweenness"
+type = "degree"
 
 random <- read_to_M(dir(type,full.names=T))
 
