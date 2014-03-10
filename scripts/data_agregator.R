@@ -35,7 +35,7 @@ read_to_M <- function(filelist) {
   return(M)
 }
 
-type = "degree"
+type = "betweenness"
 
 random <- read_to_M(dir(type,full.names=T))
 
@@ -43,7 +43,7 @@ random <- read_to_M(dir(type,full.names=T))
 
 # 10% effort is row 11
 
-medians = apply(random, 2, median)
+medians = apply(random, 2, mean)
 
 effort = seq(0, 100, 5)
 plot(x=effort, y=medians/3308,

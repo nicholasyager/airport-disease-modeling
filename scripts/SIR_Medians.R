@@ -8,15 +8,15 @@ for (file_num in 1:length(filelist)) {
   I <- file$i
   R <- file$r
   
-  for ( i in 1:(30-length(S))) {
+  for ( i in 1:(40-length(S))) {
     S = append(S,S[length(S)])
   }
   
-  for ( i in 1:(30-length(R))) {
+  for ( i in 1:(40-length(R))) {
     R = append(R,R[length(R)])
   }
   
-  for ( i in 1:(30-length(I))) {
+  for ( i in 1:(40-length(I))) {
     I = append(I,I[length(I)])
   }
   
@@ -36,9 +36,9 @@ for (file_num in 1:length(filelist)) {
   
 }
 
-medianS <- apply(as.matrix(allS), 1, median)
-medianI <- apply(as.matrix(allI), 1, median)
-medianR <- apply(as.matrix(allR), 1, median)
+medianS <- apply(as.matrix(allS), 1, mean)
+medianI <- apply(as.matrix(allI), 1, mean)
+medianR <- apply(as.matrix(allR), 1, mean)
 
 stddevS <-apply(as.matrix(allS), 1, sd)
 stddevI <-apply(as.matrix(allI), 1, sd)
@@ -53,9 +53,9 @@ apply(as.matrix(allI), 2, function(x) points(x,col="green",pch=1,cex=0.5))
 apply(as.matrix(allR), 2, function(x) points(x,col="red",pch=1,cex=0.5))
 
 plot(medianS/totals,
-     main="Median SIR Response of Infection in an Directed Network",
+     main="Mean SIR Response of Infection in Weighted Airport Network",
      xlab="Time (ticks)", ylab="Proportion of Population",
-     type="l",col="blue", ylim=c(0,1), xlim=c(1,16), lwd=2)
+     type="l",col="blue", ylim=c(0,1),  lwd=2)
 lines(medianI/ totals, col="green", lty="dashed", lwd=2)
 lines(medianR/ totals, col="red", lty="dotted", lwd=2)
 

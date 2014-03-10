@@ -29,7 +29,7 @@ import getopt
 import math
 import networkx as nx
 import matplotlib.pyplot as plt
-from mpl_toolkits.basemap import Basemap as Basemap
+#from mpl_toolkits.basemap import Basemap as Basemap
 import operator
 import os
 import random
@@ -51,7 +51,18 @@ def main():
         Void
 
     """
-   
+
+    # Flag defaults
+    GENETIC = False 
+    BETWEENNESS = False 
+    DEGREE = False 
+    RANDOM = False 
+    SIR = False
+    UNDIRECT = False
+    VISUALIZE = False
+    EDGES = False
+
+
     # Determine the parameters of the current simulation.
     opts, args = getopt.getopt(sys.argv[1:], "bgdrusve", ["Betweenness",
                                                             "Genetic",
@@ -62,14 +73,23 @@ def main():
                                                             "visualize",
                                                             "byedge"])
 
-    GENETIC = False 
-    BETWEENNESS = False 
-    DEGREE = False 
-    RANDOM = False 
-    SIR = False
-    UNDIRECT = False
-    VISUALIZE = False
-    EDGES = False
+
+    # Check if the data arguments are available
+    if len(args) < 2:
+        print("\nflu_simulator.py -gbdrus <airport database> <route database>\n")
+        print("Flags:\n\t-g: Run a genetic algorithm quarantine simulation.")
+        print("\t-b: Run a betweenness-based quarantine simulation.")
+        print("\t-d: Run a degree-based quarantine simulation.")
+        print("\t-r: Run a random quarantine simulation.")
+        print("\t-u: Convert the network to an undirected network.")
+        print("\t-s: Run a naive simulation and output the SIR data.\n")
+        exit()
+
+
+    AIRPORT_DATA = args[0]
+    ROUTE_DATA = args[1]
+
+
 
     for o, a in opts:
         if o == "-g":
@@ -94,9 +114,6 @@ def main():
         elif o == "-e":
             EDGES = True
             
-    AIRPORT_DATA = args[0]
-    ROUTE_DATA = args[1]
-
     #NUM_SIMULATIONS = 344
     NUM_SIMULATIONS = 100
 
@@ -112,12 +129,14 @@ def main():
     for airport, degree in degrees.items():
         weights[airport] = network.out_degree(airport) +\
                            network.in_degree(airport)
-
+    
     target = list()
     for ind in range(0,NUM_SIMULATIONS):
         target_round = list()
-        for second_ind in range(0,10):
-             target_round.append(weighted_random(weights))
+        while len(target_round) < 10:
+             chosen_airport = weighted_random(weights)
+             if chosen_airport not in target_round:
+                 target_round.append(chosen_airport)
         target.append(target_round)
 
     if UNDIRECT:
@@ -129,7 +148,7 @@ def main():
     os.chdir(currenttime)
 
     # Record relevent data about the simulation.
-    simulation_data(network, currenttime, target, seed)
+    # simulation_data(network, currenttime, target, seed)
 
     if GENETIC:
         genetic_simulations(network, 50, 50, target)
@@ -371,7 +390,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES):
 def degree_simulations(network, targets, VISUALIZE, EDGES):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
-    quarantining airports of decreasing degree.
+    closing routes of decreasing degree-based weight.
 
     Args:
         network: A NetworkX graph object.
@@ -387,7 +406,10 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
     print("Degree Mode.")
     print("\tCalculating degrees", end="")
     sys.stdout.flush()
-    degrees = network.degree()
+    degrees = network.edges()['weights']
+    print(degrees)
+    exit()
+
     degree = sorted(degrees.keys(), key=lambda k: degrees[k], reverse=True)
     print("\t\t\t\t\t[Done]")
 
@@ -458,9 +480,7 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES):
     sys.stdout.flush()
     betweennesses = nx.edge_betweenness_centrality(network)
     betweenness = sorted(betweennesses.keys(), 
-                    key=lambda k: betweennesses[k], reverse=True)
-
-    print(betweenness)
+                    key=lambda k: k[1], reverse=True)
 
     print("\t\t\t\t[Done]")
 
@@ -885,7 +905,10 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
                         # degree() == out_degree()
                         total_degree += network.out_degree(victim)
 
-
+                    if len(victims) > 0:
+                        average_degree = total_degree / len(victims)
+                    else:
+                        average_degree = 0
                     # Infect possible victims
                     for victim in victims:
                         infect_status = network.node[victim]["status"]
@@ -895,14 +918,14 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
                         infect = False # Set this flag to False to start 
                                       # weighting.
 
-                        if total_degree > 0:
-                            probability_of_infection = 10 * victim_degree / \
-                                                       total_degree
+                        if average_degree > 0:
+                            probability_of_infection = victim_degree / \
+                                                       average_degree
                         else:
                             probability_of_infection = 0
 
-                        print(victim_degree,"/", total_degree," = ",
-                              probability_of_infection)
+                        #print(victim_degree,"/", total_degree," = ",
+                        #      probability_of_infection)
 
                         if random.uniform(0,1) <= probability_of_infection:
 
