@@ -102,6 +102,13 @@ Returns:<br>
 IO:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;betweenness.csv:&nbsp;A&nbsp;file&nbsp;with&nbsp;the&nbsp;number&nbsp;of&nbsp;total&nbsp;infected&nbsp;people&nbsp;in&nbsp;the<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;network&nbsp;for&nbsp;each&nbsp;vaccination&nbsp;effort.</tt></dd></dl>
+ <dl><dt><a name="-calculateWeights"><strong>calculateWeights</strong></a>(input_network)</dt><dd><tt>Add&nbsp;weights&nbsp;to&nbsp;the&nbsp;edges&nbsp;of&nbsp;a&nbsp;network&nbsp;based&nbsp;on&nbsp;the&nbsp;degrees&nbsp;of&nbsp;the&nbsp;connecting<br>
+verticies,&nbsp;and&nbsp;return&nbsp;the&nbsp;network.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;input_network:&nbsp;A&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a><br>
+Returns:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;G:&nbsp;A&nbsp;weighted&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a>.</tt></dd></dl>
  <dl><dt><a name="-calculate_fitnesses"><strong>calculate_fitnesses</strong></a>(vaccinations)</dt><dd><tt>Calculate&nbsp;the&nbsp;shared&nbsp;Pareto&nbsp;Niche&nbsp;fitness&nbsp;for&nbsp;a&nbsp;list&nbsp;of&nbsp;vaccination&nbsp;<br>
 strategies.<br>
 &nbsp;<br>

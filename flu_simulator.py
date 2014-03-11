@@ -65,15 +65,15 @@ def main():
     DELAY = 0
 
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "bgdrusve", ["Betweenness",
+    opts, args = getopt.getopt(sys.argv[1:], "wbgd:rusve", [ "Weight",
+                                                            "Betweenness",
                                                             "Genetic",
-                                                            "Degree",
+                                                            "Delay",
                                                             "Random",
                                                             "Undirect",
                                                             "SIR",
                                                             "visualize",
-                                                            "byedge"])
-
+                                                            "ByEdge"])
 
     # Check if the data arguments are available
     if len(args) < 2:
@@ -103,7 +103,7 @@ def main():
         elif o == "-w":
             GENETIC = False
             WEIGHT = True
-        elif o == "-d":
+        elif o == "--d":
             DELAY = a
         elif o == "-r":
             GENETIC = False
@@ -159,7 +159,7 @@ def main():
     if BETWEENNESS:
         betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY)
     
-    if DEGREE:
+    if WEIGHT:
         degree_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
     if RANDOM:
@@ -419,18 +419,18 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
     print("\t\t\t\t\t[Done]")
 
     # Make a new folder for the degree data.
-    os.makedirs("degree")
+    os.makedirs("weight")
 
     iteration = 0
     for target in targets:
 
         # Open a file for this targ'ets dataset
-        degree_file = open("degree/degree_{0}.csv".format(pad_string(iteration,4)),"w")
+        degree_file = open("weight/weight_{0}.csv".format(pad_string(iteration,4)),"w")
         degree_file.write('"effort","total_infected, edges_closed"\n')
 
 
         # Generate a baseline
-        results = infection(network, None, target, VISUALIZE, title="degree - 0%")
+        results = infection(network, None, target, VISUALIZE, title="weight - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         degree_file.write("{0},{1}\n".format(0,total_infected))
 
@@ -441,7 +441,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
 
             edges_closed = len(strategy)
 
-            title = "degree - {0}%".format(effort/100)
+            title = "weight - {0}%".format(effort/100)
 
             results = infection(network, strategy, target, VISUALIZE, 
                                 title=title, inf_type=EDGES, DELAY=DELAY)
@@ -816,8 +816,24 @@ def create_network(nodes, edges):
         if node not in subgraph_nodes:
             to_remove.append(node)
             
-    G.remove_nodes_from(to_remove)
 
+    G.remove_nodes_from(to_remove)
+    G = calculateWeights(G)
+
+    return G
+
+def calculateWeights(input_network):
+    """
+    Add weights to the edges of a network based on the degrees of the connecting
+    verticies, and return the network.
+
+    Args:
+        input_network: A NetworkX graph object
+    Returns:
+        G: A weighted NetworkX graph object.
+    """
+    
+    G = input_network.copy()
     weights = list()
 
     # Add weights to edges
@@ -853,9 +869,6 @@ def create_network(nodes, edges):
            
             G[node][successor]['weight'] = probability_of_infection
 
-    print(max(weights))
-    print(sum(weights)/len(weights))
-
     return G
 
 def infection(input_network, vaccination, starts, vis = False, file_name = "sir.csv", title="", inf_type=False, DELAY=0):
@@ -877,7 +890,8 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
     print("Simulating infection.")
 
     network = input_network.copy()
-
+    
+    # Recalculate the weights of the network as per necessary
 
     # Open the data file
     f = open(file_name, "w")
@@ -895,17 +909,16 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
         infected = start
         network.node[infected]["status"] = "i"
         network.node[infected]["color"]  = "orange"
-        print("\tInitial vector: "+network.node[infected]["name"])
-
+        
         if isinstance(network,nx.DiGraph):
             in_degree = network.in_degree()[infected] 
             out_degree = network.out_degree()[infected]
-            print("\tIn degree: ",in_degree)
-            print("\tOut degree:",out_degree)
-
+            degree = in_degree + out_degree
         else:
             degree = network.degree()[infected]
-            print("\tDegree: ",degree)
+
+        print("\t",network.node[infected]["name"],"[",degree,"]")
+
 
     if vaccination is not None:
         print("\tVaccinated: ", len(vaccination) )
@@ -921,6 +934,9 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
         if step == DELAY:
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
+                # Recalculate the weights of the network as per necessary
+                network = calculateWeights(network)
+
 
         # Create variables to hold the outcomes as they happen
         S,E,I,R = 0,0,0,0
