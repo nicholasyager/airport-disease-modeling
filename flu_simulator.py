@@ -13,7 +13,8 @@ as:
     Flags:
         -g: Run a genetic algorithm quarantine simulation.
         -b: Run a betweenness-based quarantine simulation.
-        -d: Run a degree-based quarantine simulation.
+        -d: Add a delay to quarantine simulations.
+        -w: Run a simulation based on edge weights.
         -r: Run a random quarantine simulation.
         -u: Convert the network to an undirected network.
         -s: Run a naive simulation and output the SIR data.
@@ -55,13 +56,13 @@ def main():
     # Flag defaults
     GENETIC = False 
     BETWEENNESS = False 
-    DEGREE = False 
+    WEIGHT = False 
     RANDOM = False 
     SIR = False
     UNDIRECT = False
     VISUALIZE = False
     EDGES = False
-
+    DELAY = 0
 
     # Determine the parameters of the current simulation.
     opts, args = getopt.getopt(sys.argv[1:], "bgdrusve", ["Betweenness",
@@ -99,9 +100,11 @@ def main():
         elif o == "-b":
             GENETIC = False
             BETWEENNESS = True
-        elif o == "-d":
+        elif o == "-w":
             GENETIC = False
-            DEGREE = True
+            WEIGHT = True
+        elif o == "-d":
+            DELAY = a
         elif o == "-r":
             GENETIC = False
             RANDOM = True
@@ -154,16 +157,16 @@ def main():
         genetic_simulations(network, 50, 50, target)
 
     if BETWEENNESS:
-        betweenness_simulations(network, target, VISUALIZE, EDGES)
+        betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY)
     
     if DEGREE:
-        degree_simulations(network, target, VISUALIZE, EDGES)
+        degree_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
     if RANDOM:
-        random_simulations(network, target, VISUALIZE, EDGES)
+        random_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
     if SIR:
-        sir_simulations(network, target, VISUALIZE, EDGES)
+        sir_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
@@ -194,7 +197,7 @@ def pad_string(integer, n):
 
     return string
 
-def sir_simulations(network, targets, VISUALIZE, EDGES):
+def sir_simulations(network, targets, VISUALIZE, EDGES, DELAY):
     """
     Run an infection simulation across the network for each of the given
     targets, and determine the median number of infected per day.
@@ -330,7 +333,7 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets, VISUALIZE, EDGES):
+def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
     """
     Simulate the spread of infection for increasing vaccination efforts by
     quarantining airports randomly.
@@ -373,7 +376,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES):
 
             title = "random - {0}%".format(effort/100)
             results = infection(network, strategy, target, VISUALIZE,
-                                title=title, inf_type=EDGES)
+                                title=title, inf_type=EDGES,  DELAY=DELAY)
             total_infected = results["Infected"] + results["Recovered"]
             random_file.write("{0},{1}\n".format(effort/100,total_infected))
      
@@ -388,7 +391,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES):
 
 
 
-def degree_simulations(network, targets, VISUALIZE, EDGES):
+def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     closing routes of decreasing degree-based weight.
@@ -414,8 +417,6 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
     for degree_item in sorted_degree:
         degree.append((degree_item[0], degree_item[1]))
     print("\t\t\t\t\t[Done]")
-
-    print(degree)
 
     # Make a new folder for the degree data.
     os.makedirs("degree")
@@ -443,8 +444,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
             title = "degree - {0}%".format(effort/100)
 
             results = infection(network, strategy, target, VISUALIZE, 
-                                title=title, 
-                                inf_type=EDGES)
+                                title=title, inf_type=EDGES, DELAY=DELAY)
             total_infected = results["Infected"] + results["Recovered"]
             degree_file.write("{0},{1}\n".format(effort/100,
                                                  total_infected,
@@ -461,7 +461,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES):
         degree_file.close()
 
 
-def betweenness_simulations(network,targets, VISUALIZE, EDGES):
+def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
@@ -513,8 +513,8 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES):
             strategy = [x for x in betweenness[0:max_index]]
 
             title = "betweenness - {0}%".format(effort/100)
-            results = infection(network, strategy, target, VISUALIZE,title= title,
-                                inf_type=EDGES)
+            results = infection(network, strategy, target, VISUALIZE,
+                                title=title, inf_type=EDGES, DELAY=DELAY)
             total_infected = results["Infected"] + results["Recovered"]
             betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
             
@@ -818,6 +818,7 @@ def create_network(nodes, edges):
             
     G.remove_nodes_from(to_remove)
 
+    weights = list()
 
     # Add weights to edges
     for node in G.nodes():
@@ -833,11 +834,6 @@ def create_network(nodes, edges):
                 # Don't add anything
                 pass
 
-        if len(successors) > 0:
-            average_degree = total_degree / len(successors)
-        else:
-            average_degree = 0
-
         # Find the weight for all possible successors
         for successor in successors:
             successor_degree = G.out_degree(successor)
@@ -847,19 +843,22 @@ def create_network(nodes, edges):
             except TypeError:
                 successor_degree = 0
 
-            if average_degree > 0:
+            if total_degree > 0:
                 probability_of_infection = successor_degree / \
-                                           average_degree
+                                           total_degree
             else:
                 probability_of_infection = 0
 
+            weights.append(probability_of_infection)
+           
             G[node][successor]['weight'] = probability_of_infection
 
-
+    print(max(weights))
+    print(sum(weights)/len(weights))
 
     return G
 
-def infection(input_network, vaccination, starts, vis = False, file_name = "sir.csv", title="", inf_type=False):
+def infection(input_network, vaccination, starts, vis = False, file_name = "sir.csv", title="", inf_type=False, DELAY=0):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -882,7 +881,7 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
 
     # Open the data file
     f = open(file_name, "w")
-    f.write("time, s, i, r\n")
+    f.write("time, s, e, i, r\n")
 
     # Set the default to susceptable
     sys.stdout.flush()
@@ -891,10 +890,6 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
         network.node[node]["color"] = "b"
         network.node[node]["age"] = 0
     
-    # Add in the recovering
-    if vaccination is not None:
-        network.remove_edges_from(vaccination)
-
     # Assign the infected
     for start in starts:
         infected = start
@@ -923,24 +918,36 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
     # Iterate through the evolution of the disease.
     for step in range(0,99):
 
+        if step == DELAY:
+            if vaccination is not None:
+                network.remove_edges_from(vaccination)
+
         # Create variables to hold the outcomes as they happen
-        S, I, R = 0, 0, 0
+        S,E,I,R = 0,0,0,0
 
         for node in network.nodes():
             status = network.node[node]["status"]
             age = network.node[node]["age"]
             color = network.node[node]["color"]
 
-            if status is "i" and age >= 5:
+            if status is "i" and age >= 11:
                 # The infected has reached its recovery time
                 network.node[node]["status"] = "r"
                 network.node[node]["color"] = "g"
+                
+            if status is "e" and age >= 3 and age < 11:
+                # The infected has reached its recovery time
+                network.node[node]["status"] = "i"
+                network.node[node]["color"] = "o"
+
+            elif status is "e":
+                network.node[node]["age"] += 1
 
             elif status is "i":
                 # Propogate the infection.
                 if age > 0:
                     victims = network.successors(node)
-
+                    number_infections = 0
                     for victim in victims:
                         infect_status = network.node[victim]["status"]
                         infect = False # Set this flag to False to start 
@@ -950,12 +957,14 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
                         if random.uniform(0,1) <= network[node][victim]['weight']:
 
                             infect = True
+                            number_infections+=1
 
                         if infect_status == "s" and infect == True:
-                            network.node[victim]["status"] = "i"
+                            network.node[victim]["status"] = "e"
                             network.node[victim]["age"] = 0
                             network.node[victim]["color"] = "orange"
                 network.node[node]["age"] += 1
+
 
         # Loop twice to prevent bias.
         for node in network.nodes():
@@ -967,6 +976,9 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
                 # Count those susceptable
                 S += 1
 
+            if status is "e":
+                E += 1
+
             if status is "v":
                 S += 1
 
@@ -977,9 +989,9 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
             elif status is "i":
                 
                 I += 1
-        print("{0}, {1}, {2}, {3}".format(step, S, I, R))
+        print("{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R))
 
-        printline = "{0}, {1}, {2}, {3}".format(step, S, I, R)
+        printline = "{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R)
         f.write(printline + "\n")
 
        # print("\t"+printline)

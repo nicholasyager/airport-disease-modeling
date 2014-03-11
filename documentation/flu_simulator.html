@@ -20,7 +20,8 @@ as:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;Flags:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-g:&nbsp;Run&nbsp;a&nbsp;genetic&nbsp;algorithm&nbsp;quarantine&nbsp;simulation.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-b:&nbsp;Run&nbsp;a&nbsp;betweenness-based&nbsp;quarantine&nbsp;simulation.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-d:&nbsp;Run&nbsp;a&nbsp;degree-based&nbsp;quarantine&nbsp;simulation.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-d:&nbsp;Add&nbsp;a&nbsp;delay&nbsp;to&nbsp;quarantine&nbsp;simulations.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-w:&nbsp;Run&nbsp;a&nbsp;simulation&nbsp;based&nbsp;on&nbsp;edge&nbsp;weights.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-r:&nbsp;Run&nbsp;a&nbsp;random&nbsp;quarantine&nbsp;simulation.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-u:&nbsp;Convert&nbsp;the&nbsp;network&nbsp;to&nbsp;an&nbsp;undirected&nbsp;network.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-s:&nbsp;Run&nbsp;a&nbsp;naive&nbsp;simulation&nbsp;and&nbsp;output&nbsp;the&nbsp;SIR&nbsp;data.</tt></p>
@@ -39,8 +40,9 @@ as:<br>
 <a href="os.html">os</a><br>
 </td><td width="25%" valign=top><a href="matplotlib.pyplot.html">matplotlib.pyplot</a><br>
 <a href="random.html">random</a><br>
-<a href="sys.html">sys</a><br>
-</td><td width="25%" valign=top><a href="time.html">time</a><br>
+<a href="scipy.stats.html">scipy.stats</a><br>
+</td><td width="25%" valign=top><a href="sys.html">sys</a><br>
+<a href="time.html">time</a><br>
 </td></tr></table></td></tr></table><p>
 <table width="100%" cellspacing=0 cellpadding=2 border=0 summary="section">
 <tr bgcolor="#ee77aa">
@@ -87,7 +89,7 @@ Data descriptors defined here:<br>
 <font color="#ffffff" face="helvetica, arial"><big><strong>Functions</strong></big></font></td></tr>
     
 <tr><td bgcolor="#eeaa77"><tt>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt></td><td>&nbsp;</td>
-<td width="100%"><dl><dt><a name="-betweenness_simulations"><strong>betweenness_simulations</strong></a>(network, targets, VISUALIZE)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by&nbsp;<br>
+<td width="100%"><dl><dt><a name="-betweenness_simulations"><strong>betweenness_simulations</strong></a>(network, targets, VISUALIZE, EDGES, DELAY)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by&nbsp;<br>
 quarantining&nbsp;airports&nbsp;of&nbsp;decreasing&nbsp;betweenness.<br>
 &nbsp;<br>
 Args:<br>
@@ -114,8 +116,8 @@ Args:<br>
 Returns:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;G:&nbsp;A&nbsp;NetworkX&nbsp;DiGraph&nbsp;<a href="builtins.html#object">object</a>&nbsp;populated&nbsp;with&nbsp;the&nbsp;nodes&nbsp;and&nbsp;edges&nbsp;assigned<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;by&nbsp;the&nbsp;data&nbsp;files&nbsp;from&nbsp;the&nbsp;arguments.</tt></dd></dl>
- <dl><dt><a name="-degree_simulations"><strong>degree_simulations</strong></a>(network, targets, VISUALIZE)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by&nbsp;<br>
-quarantining&nbsp;airports&nbsp;of&nbsp;decreasing&nbsp;degree.<br>
+ <dl><dt><a name="-degree_simulations"><strong>degree_simulations</strong></a>(network, targets, VISUALIZE, EDGES, DELAY)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by&nbsp;<br>
+closing&nbsp;routes&nbsp;of&nbsp;decreasing&nbsp;degree-based&nbsp;weight.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;network:&nbsp;A&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a>.<br>
@@ -143,7 +145,7 @@ IO:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;pareto_*.csv:&nbsp;Files&nbsp;containing&nbsp;data&nbsp;on&nbsp;the&nbsp;fitness&nbsp;values&nbsp;for<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;each&nbsp;strategy&nbsp;for&nbsp;each&nbsp;generation.</tt></dd></dl>
  <dl><dt><a name="-genetic_test"><strong>genetic_test</strong></a>(network, vaccinations, target)</dt><dd><tt>genetic_test</tt></dd></dl>
- <dl><dt><a name="-infection"><strong>infection</strong></a>(input_network, vaccination, start, vis<font color="#909090">=False</font>, file_name<font color="#909090">='sir.csv'</font>, title<font color="#909090">=''</font>)</dt><dd><tt>Simulate&nbsp;an&nbsp;infection&nbsp;within&nbsp;network,&nbsp;generated&nbsp;using&nbsp;seed,&nbsp;and&nbsp;with&nbsp;the<br>
+ <dl><dt><a name="-infection"><strong>infection</strong></a>(input_network, vaccination, starts, vis<font color="#909090">=False</font>, file_name<font color="#909090">='sir.csv'</font>, title<font color="#909090">=''</font>, inf_type<font color="#909090">=False</font>, DELAY<font color="#909090">=0</font>)</dt><dd><tt>Simulate&nbsp;an&nbsp;infection&nbsp;within&nbsp;network,&nbsp;generated&nbsp;using&nbsp;seed,&nbsp;and&nbsp;with&nbsp;the<br>
 givin&nbsp;vaccination&nbsp;strategy.&nbsp;This&nbsp;function&nbsp;will&nbsp;write&nbsp;data&nbsp;from&nbsp;each&nbsp;timestep<br>
 to&nbsp;"data.csv".<br>
 &nbsp;<br>
@@ -171,7 +173,7 @@ Args:<br>
 &nbsp;<br>
 Returns<br>
 &nbsp;&nbsp;&nbsp;&nbsp;string:&nbsp;The&nbsp;padded&nbsp;string&nbsp;representation&nbsp;of&nbsp;the&nbsp;integer.</tt></dd></dl>
- <dl><dt><a name="-random_simulations"><strong>random_simulations</strong></a>(network, targets, VISUALIZE)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by<br>
+ <dl><dt><a name="-random_simulations"><strong>random_simulations</strong></a>(network, targets, VISUALIZE, EDGES, DELAY)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by<br>
 quarantining&nbsp;airports&nbsp;randomly.<br>
 &nbsp;<br>
 Args:<br>
@@ -195,7 +197,7 @@ Returns:<br>
 &nbsp;<br>
 IO:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;network.dat:&nbsp;A&nbsp;file&nbsp;with&nbsp;all&nbsp;of&nbsp;the&nbsp;relevent&nbsp;netowkr&nbsp;information.</tt></dd></dl>
- <dl><dt><a name="-sir_simulations"><strong>sir_simulations</strong></a>(network, targets, VISUALIZE)</dt><dd><tt>Run&nbsp;an&nbsp;infection&nbsp;simulation&nbsp;across&nbsp;the&nbsp;network&nbsp;for&nbsp;each&nbsp;of&nbsp;the&nbsp;given<br>
+ <dl><dt><a name="-sir_simulations"><strong>sir_simulations</strong></a>(network, targets, VISUALIZE, EDGES, DELAY)</dt><dd><tt>Run&nbsp;an&nbsp;infection&nbsp;simulation&nbsp;across&nbsp;the&nbsp;network&nbsp;for&nbsp;each&nbsp;of&nbsp;the&nbsp;given<br>
 targets,&nbsp;and&nbsp;determine&nbsp;the&nbsp;median&nbsp;number&nbsp;of&nbsp;infected&nbsp;per&nbsp;day.<br>
 &nbsp;<br>
 Args:<br>
@@ -208,6 +210,7 @@ Returns<br>
 IO:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;sir.csv:&nbsp;The&nbsp;proportion&nbsp;of&nbsp;a&nbsp;population&nbsp;that&nbsp;is&nbsp;infected&nbsp;by&nbsp;time&nbsp;step.</tt></dd></dl>
  <dl><dt><a name="-visualize"><strong>visualize</strong></a>(network, title, pos)</dt><dd><tt>Visualize&nbsp;the&nbsp;network&nbsp;given&nbsp;an&nbsp;array&nbsp;of&nbsp;posisitons.</tt></dd></dl>
+ <dl><dt><a name="-weighted_random"><strong>weighted_random</strong></a>(weights)</dt></dl>
  <dl><dt><a name="-write_dot"><strong>write_dot</strong></a>(network, path)</dt><dd><tt>Write&nbsp;a&nbsp;DOT&nbsp;file&nbsp;for&nbsp;external&nbsp;network&nbsp;rendering.&nbsp;This&nbsp;function&nbsp;is&nbsp;necessary<br>
 due&nbsp;to&nbsp;networkx&nbsp;incompentence.<br>
 &nbsp;<br>

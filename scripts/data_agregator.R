@@ -35,7 +35,7 @@ read_to_M <- function(filelist) {
   return(M)
 }
 
-type = "degree"
+type = "random"
 
 random <- read_to_M(dir(type,full.names=T))
 
@@ -46,7 +46,7 @@ random <- read_to_M(dir(type,full.names=T))
 medians = apply(random, 2, mean)
 
 effort = seq(0, 100, 5)
-plot(x=effort, y=medians/3308,
+plot(x=effort, y=medians/3289,
      main="Effect of quarantine strategies on median number of infections",
      xlab=paste(type,"-based quarantine effort (%)",sep=""),
      ylab="Proportion of airports infected", pch=19, type="b",
@@ -54,7 +54,7 @@ plot(x=effort, y=medians/3308,
 
 abline(h=0, lty="dotted")
 
-data = as.data.frame(cbind(effort, medians/3308))
+data = as.data.frame(cbind(effort, medians/3289))
 names(data) <- c("Effort", "Median")
 
 # A nice distribution graph -------------------------------------------
