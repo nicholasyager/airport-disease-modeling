@@ -64,6 +64,8 @@ def main():
     UNDIRECT = False
     VISUALIZE = False
     EDGES = False
+    INTERNATIONAL = False
+    Cluster = False
     DELAY = 0
 
     # Determine the parameters of the current simulation.
@@ -75,7 +77,9 @@ def main():
                                                             "Undirect",
                                                             "SIR",
                                                             "visualize",
-                                                            "ByEdge"])
+                                                            "ByEdge",
+							    "International",
+							    "Cluster"])
 
     # Check if the data arguments are available
     if len(args) < 2:
@@ -118,6 +122,10 @@ def main():
             VISUALIZE = True
         elif o == "-e":
             EDGES = True
+	elif o == "-i":
+	    INTERNATIONAL = True
+	elif o == "-c":
+	    CLUSTER = True
             
     #NUM_SIMULATIONS = 344
     NUM_SIMULATIONS = 100
@@ -169,6 +177,11 @@ def main():
 
     if SIR:
         sir_simulations(network, target, VISUALIZE, EDGES, DELAY)
+
+    if INTERNATIONAL:
+	international_simulations(network, target, VISUALIZE, EDGES, DELAY)
+    if CLUSTER:
+	cluster_simulation(network, target, VISUALIZE, EDGES, DELAY)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
