@@ -16,6 +16,8 @@ as:
         -d: Add a delay to quarantine simulations.
         -w: Run a simulation based on edge weights.
         -r: Run a random quarantine simulation.
+	-i: Run a simulation based on closing international flights.
+	-c: Run a simulation based on making clusters.
         -u: Convert the network to an undirected network.
         -s: Run a naive simulation and output the SIR data.
 
