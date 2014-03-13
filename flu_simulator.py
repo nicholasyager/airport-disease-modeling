@@ -21,7 +21,7 @@ as:
 
 """
 
-# Title:  air_travel_fl.py
+# Title:  flu_simulator.py
 # Author: Nicholas A. Yager
 # Date:   2013-01-12
 
