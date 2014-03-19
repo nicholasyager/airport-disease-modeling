@@ -23,7 +23,7 @@ as:
 
 """
 
-# Title:  air_travel_fl.py
+# Title:  flu_simulator.py
 # Author: Nicholas A. Yager
 # Date:   2013-01-12
 
@@ -904,11 +904,11 @@ def create_network(nodes, edges):
             
 
     G.remove_nodes_from(to_remove)
-    G = calculateWeights(G)
+    G = calculate_weights(G)
 
     return G
 
-def calculateWeights(input_network):
+def calculate_weights(input_network):
     """
     Add weights to the edges of a network based on the degrees of the connecting
     verticies, and return the network.
@@ -920,11 +920,11 @@ def calculateWeights(input_network):
     """
     
     G = input_network.copy()
-    weights = list()
 
     # Add weights to edges
     for node in G.nodes():
         successors = G.successors(node)
+        weights = dict()
 
         # Calculate the total out degree of all succs
         total_degree = 0
@@ -951,9 +951,25 @@ def calculateWeights(input_network):
             else:
                 probability_of_infection = 0
 
-            weights.append(probability_of_infection)
-           
-            G[node][successor]['weight'] = probability_of_infection
+            weights[successor] = probability_of_infection
+        
+        largest_weight = 0
+        smallest_weight = 2
+        for successor, weight in weights.items():
+            if weight > largest_weight:
+                largest_weight = weight
+            elif weight < smallest_weight:
+                smallest_weight = weight
+        #(strat.shared_fitness - lowest_fitness) / \
+        #                       (highest_fitness - lowest_fitness)
+
+        for successor in successors:
+            if largest_weight != smallest_weight:
+                relative_weight = (weights[successor] - smallest_weight) /\
+                                  (largest_weight - smallest_weight)
+            else:
+                relative_weight = 0
+            G[node][successor]['weight'] = relative_weight
 
     return G
 
@@ -1021,7 +1037,7 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
                 # Recalculate the weights of the network as per necessary
-                network = calculateWeights(network)
+                network = calculate_weights(network)
 
 
         # Create variables to hold the outcomes as they happen
