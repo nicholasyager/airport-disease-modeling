@@ -65,21 +65,22 @@ def main():
     VISUALIZE = False
     EDGES = False
     INTERNATIONAL = False
-    Cluster = False
+    CLUSTER = False
     DELAY = 0
 
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "wbgd:rusve", [ "Weight",
+    opts, args = getopt.getopt(sys.argv[1:], "wbgd:icrusve", [ "Weight",
                                                             "Betweenness",
                                                             "Genetic",
                                                             "Delay",
+                                                            "Cluster",
+                                                            "International",
                                                             "Random",
                                                             "Undirect",
                                                             "SIR",
                                                             "visualize",
-                                                            "ByEdge",
-							    "International",
-							    "Cluster"])
+                                                            "ByEdge" ]
+                                                            )
 
     # Check if the data arguments are available
     if len(args) < 2:
@@ -89,7 +90,9 @@ def main():
         print("\t-d: Run a degree-based quarantine simulation.")
         print("\t-r: Run a random quarantine simulation.")
         print("\t-u: Convert the network to an undirected network.")
-        print("\t-s: Run a naive simulation and output the SIR data.\n")
+        print("\t-s: Run a naive simulation and output the SIR data.")
+        print("\t-c: Run a simulation based on local clustering coefficients.")
+        print("\t-i: Run a simulation based on international quarantine.\n")
         exit()
 
 
@@ -122,10 +125,10 @@ def main():
             VISUALIZE = True
         elif o == "-e":
             EDGES = True
-	elif o == "-i":
-	    INTERNATIONAL = True
-	elif o == "-c":
-	    CLUSTER = True
+        elif o == "-i":
+            INTERNATIONAL = True
+        elif o == "-c":
+            CLUSTER = True
             
     #NUM_SIMULATIONS = 344
     NUM_SIMULATIONS = 100
@@ -179,9 +182,10 @@ def main():
         sir_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
     if INTERNATIONAL:
-	international_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        international_simulations(network, target, VISUALIZE, EDGES, DELAY)
+
     if CLUSTER:
-	cluster_simulation(network, target, VISUALIZE, EDGES, DELAY)
+        cluster_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
@@ -687,6 +691,73 @@ class Vaccination:
                 self.airports.pop(item)
         self.closures = len(self.airports)
         self.cleanDuplicates()
+
+def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
+    """
+    Simulate the spread of infection for increasing vaccination efforts by 
+    quarantining airports by decreasing local clustering coefficients.
+
+    Args:
+        network: A NetworkX graph object.
+        targets: A list of the initial infection vertices.
+
+    Returns:
+        Void
+
+    IO:
+        cluster.csv: A file with the number of total infected people in the
+                         network for each vaccination effort.
+    """
+
+    print("Local Clustering Coefficient Mode.")
+    print("\tCalculating Local Clustering Coefficients", end="")
+    sys.stdout.flush()
+    lcluster = nx.clustering(network)
+    cluster = sorted(lcluster.keys(), 
+                    key=lambda k: k[1], reverse=True)
+
+    print("\t\t\t\t[Done]")
+
+
+    os.makedirs("Cluster")
+
+    iteration = 0
+    for target in targets:
+    
+
+        # Write the cluster data to a folder.
+        cluster_file = open(
+                            "cluster/cluster_{0}.csv".format( 
+                                            pad_string(iteration,4)),
+                            "w")
+                           
+        cluster_file.write('"effort","total_infected"\n')
+
+        # Generate a baseline
+        results = infection(network, None, target, VISUALIZE,title="Cluster - 0%")
+        total_infected = results["Infected"] + results["Recovered"]
+        cluster_file.write("{0},{1}\n".format(0,total_infected))
+
+        # Perform a check for every strategy
+        for effort in range(1,101,5):
+            max_index = int(len(cluster) * (effort/100))-1
+            strategy = [x for x in cluster[0:max_index]]
+
+            title = "cluster - {0}%".format(effort/100)
+            results = infection(network, strategy, target, VISUALIZE,
+                                title=title, inf_type=EDGES, DELAY=DELAY)
+            total_infected = results["Infected"] + results["Recovered"]
+            cluster_file.write("{0},{1}\n".format(effort/100,total_infected))
+            
+            if total_infected == 1:
+                for remaining_effort in range(effort+5,101,5):
+                    cluster_file.write("{0},{1}\n".format(remaining_effort/100,
+                                                              total_infected))
+                break
+
+        iteration += 1
+        cluster_file.close()
+
 
 def genetic_test(network, vaccinations, target):
     """
