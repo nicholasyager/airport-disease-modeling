@@ -712,9 +712,9 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
     print("Local Clustering Coefficient Mode.")
     print("\tCalculating Local Clustering Coefficients", end="")
     sys.stdout.flush()
-    lcluster = nx.clustering(network)
-    cluster = sorted(lcluster.keys(), 
-                    key=lambda k: k[1], reverse=True)
+    cluster_network = nx.Graph(network)
+    lcluster = nx.clustering(cluster_network)
+    cluster = sorted(lcluster, key=lambda lcluster:lcluster[2], reverse = True)
 
     print("\t\t\t\t[Done]")
 
