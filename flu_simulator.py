@@ -714,7 +714,7 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
     sys.stdout.flush()
     cluster_network = nx.Graph(network)
     lcluster = nx.clustering(cluster_network)
-    ecluster = lcluster(network.edges(1)) + lcluster(network.edges(2))
+    ecluster = network.edges([1[lcluster]]) + network.edges([2[lcluster]])
     cluster = sorted(ecluster, key=lambda ecluster:ecluster[2], reverse = True)
 
     print("\t\t\t\t[Done]")
