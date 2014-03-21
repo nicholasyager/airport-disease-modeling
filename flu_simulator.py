@@ -712,15 +712,17 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
     print("Local Clustering Coefficient Mode.")
     print("\tCalculating Local Clustering Coefficients", end="")
     sys.stdout.flush()
-    cluster_network = nx.Graph(network)
-    lcluster = nx.clustering(cluster_network)
-    ecluster = network.edges([1[lcluster]]) + network.edges([2[lcluster]])
-    cluster = sorted(ecluster, key=lambda ecluster:ecluster[2], reverse = True)
+    
+    clusters = network.edges(data = True)
+
+    sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'], reverse=True)
+    cluster = list()
+    for cluster_item in sorted_cluster:
+        cluster.append((cluster_item[0], cluster_item[1]))
 
     print("\t\t\t\t[Done]")
 
-
-    os.makedirs("Cluster")
+    os.makedirs("cluster")
 
     iteration = 0
     for target in targets:
@@ -906,6 +908,13 @@ def create_network(nodes, edges):
 
     G.remove_nodes_from(to_remove)
     G = calculate_weights(G)
+    
+    cluster_network = nx.Graph(G)
+    lcluster = nx.clustering(cluster_network)
+    for i,j in G.edges():
+        cluster_sum = lcluster[i] + lcluster[j]
+        G[i][j]['cluster'] = cluster_sum
+
 
     return G
 
