@@ -75,7 +75,7 @@ colors <- c("gray20",
 bp = barplot(M/3287 ,beside=T, col=colors,
              xlab="Quarantine Effort (% of edges closed)", 
              ylab="Proportion of infected airports",
-             main="Comparison of Quarantine Strategies with 10 Day Delay",
+             main="Comparison of Quarantine Strategies with 0 Day Delay",
              ylim=c(0,1)
 )
 legend("topright", legend=rownames(M), fill=colors, cex=0.8)

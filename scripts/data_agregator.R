@@ -35,7 +35,7 @@ read_to_M <- function(filelist) {
   return(M)
 }
 
-type = "weight"
+type = "cluster"
 
 random <- read_to_M(dir(type,full.names=T))
 
