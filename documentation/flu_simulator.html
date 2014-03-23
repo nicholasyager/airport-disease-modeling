@@ -23,6 +23,8 @@ as:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-d:&nbsp;Add&nbsp;a&nbsp;delay&nbsp;to&nbsp;quarantine&nbsp;simulations.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-w:&nbsp;Run&nbsp;a&nbsp;simulation&nbsp;based&nbsp;on&nbsp;edge&nbsp;weights.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-r:&nbsp;Run&nbsp;a&nbsp;random&nbsp;quarantine&nbsp;simulation.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-i:&nbsp;Run&nbsp;a&nbsp;simulation&nbsp;based&nbsp;on&nbsp;closing&nbsp;international&nbsp;flights.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-c:&nbsp;Run&nbsp;a&nbsp;simulation&nbsp;based&nbsp;on&nbsp;making&nbsp;clusters.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-u:&nbsp;Convert&nbsp;the&nbsp;network&nbsp;to&nbsp;an&nbsp;undirected&nbsp;network.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;-s:&nbsp;Run&nbsp;a&nbsp;naive&nbsp;simulation&nbsp;and&nbsp;output&nbsp;the&nbsp;SIR&nbsp;data.</tt></p>
 <p>
@@ -102,18 +104,31 @@ Returns:<br>
 IO:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;betweenness.csv:&nbsp;A&nbsp;file&nbsp;with&nbsp;the&nbsp;number&nbsp;of&nbsp;total&nbsp;infected&nbsp;people&nbsp;in&nbsp;the<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;network&nbsp;for&nbsp;each&nbsp;vaccination&nbsp;effort.</tt></dd></dl>
- <dl><dt><a name="-calculateWeights"><strong>calculateWeights</strong></a>(input_network)</dt><dd><tt>Add&nbsp;weights&nbsp;to&nbsp;the&nbsp;edges&nbsp;of&nbsp;a&nbsp;network&nbsp;based&nbsp;on&nbsp;the&nbsp;degrees&nbsp;of&nbsp;the&nbsp;connecting<br>
+ <dl><dt><a name="-calculate_fitnesses"><strong>calculate_fitnesses</strong></a>(vaccinations)</dt><dd><tt>Calculate&nbsp;the&nbsp;shared&nbsp;Pareto&nbsp;Niche&nbsp;fitness&nbsp;for&nbsp;a&nbsp;list&nbsp;of&nbsp;vaccination&nbsp;<br>
+strategies.<br>
+&nbsp;<br>
+Args:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;vaccinations:&nbsp;A&nbsp;list&nbsp;of&nbsp;vaccination&nbsp;strategies.</tt></dd></dl>
+ <dl><dt><a name="-calculate_weights"><strong>calculate_weights</strong></a>(input_network)</dt><dd><tt>Add&nbsp;weights&nbsp;to&nbsp;the&nbsp;edges&nbsp;of&nbsp;a&nbsp;network&nbsp;based&nbsp;on&nbsp;the&nbsp;degrees&nbsp;of&nbsp;the&nbsp;connecting<br>
 verticies,&nbsp;and&nbsp;return&nbsp;the&nbsp;network.<br>
 &nbsp;<br>
 Args:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;input_network:&nbsp;A&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a><br>
 Returns:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;G:&nbsp;A&nbsp;weighted&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a>.</tt></dd></dl>
- <dl><dt><a name="-calculate_fitnesses"><strong>calculate_fitnesses</strong></a>(vaccinations)</dt><dd><tt>Calculate&nbsp;the&nbsp;shared&nbsp;Pareto&nbsp;Niche&nbsp;fitness&nbsp;for&nbsp;a&nbsp;list&nbsp;of&nbsp;vaccination&nbsp;<br>
-strategies.<br>
+ <dl><dt><a name="-cluster_simulations"><strong>cluster_simulations</strong></a>(network, targets, VISUALIZE, EDGES, DELAY)</dt><dd><tt>Simulate&nbsp;the&nbsp;spread&nbsp;of&nbsp;infection&nbsp;for&nbsp;increasing&nbsp;vaccination&nbsp;efforts&nbsp;by&nbsp;<br>
+quarantining&nbsp;airports&nbsp;by&nbsp;decreasing&nbsp;local&nbsp;clustering&nbsp;coefficients.<br>
 &nbsp;<br>
 Args:<br>
-&nbsp;&nbsp;&nbsp;&nbsp;vaccinations:&nbsp;A&nbsp;list&nbsp;of&nbsp;vaccination&nbsp;strategies.</tt></dd></dl>
+&nbsp;&nbsp;&nbsp;&nbsp;network:&nbsp;A&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a>.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;targets:&nbsp;A&nbsp;list&nbsp;of&nbsp;the&nbsp;initial&nbsp;infection&nbsp;vertices.<br>
+&nbsp;<br>
+Returns:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Void<br>
+&nbsp;<br>
+IO:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;cluster.csv:&nbsp;A&nbsp;file&nbsp;with&nbsp;the&nbsp;number&nbsp;of&nbsp;total&nbsp;infected&nbsp;people&nbsp;in&nbsp;the<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;network&nbsp;for&nbsp;each&nbsp;vaccination&nbsp;effort.</tt></dd></dl>
  <dl><dt><a name="-create_network"><strong>create_network</strong></a>(nodes, edges)</dt><dd><tt>Create&nbsp;a&nbsp;NetworkX&nbsp;graph&nbsp;<a href="builtins.html#object">object</a>&nbsp;using&nbsp;the&nbsp;airport&nbsp;and&nbsp;route&nbsp;databases.<br>
 &nbsp;<br>
 Args:<br>
