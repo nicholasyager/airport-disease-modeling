@@ -1044,6 +1044,9 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
     for step in range(0,99):
 
         if step == DELAY:
+
+            print("The",DELAY,"step delay ended on step", setep) #TMP
+
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
                 # Recalculate the weights of the network as per necessary
