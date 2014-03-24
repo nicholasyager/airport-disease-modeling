@@ -112,7 +112,7 @@ def main():
         elif o == "-w":
             GENETIC = False
             WEIGHT = True
-        elif o == "--d":
+        elif o == "-d":
             DELAY = a
         elif o == "-r":
             GENETIC = False
@@ -382,7 +382,8 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
 
 
         # Generate a baseline
-        results = infection(network, None, target, VISUALIZE, title="Random - 0%")
+        results = infection(network, None, target,DELAY=DELAY, vis=VISUALIZE, 
+                            title="Random - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         random_file.write("{0},{1}\n".format(0,total_infected))
 
@@ -394,8 +395,9 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
             strategy = network.edges(randoms)[0:max_index]
 
             title = "random - {0}%".format(effort/100)
-            results = infection(network, strategy, target, VISUALIZE,
-                                title=title, inf_type=EDGES,  DELAY=DELAY)
+            results = infection(network, strategy, target, vis=VISUALIZE,
+                                DELAY=DELAY,
+                                title=title, inf_type=EDGES)
             total_infected = results["Infected"] + results["Recovered"]
             random_file.write("{0},{1}\n".format(effort/100,total_infected))
      
@@ -449,7 +451,8 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
 
 
         # Generate a baseline
-        results = infection(network, None, target, VISUALIZE, title="weight - 0%")
+        results = infection(network, None, target, vis=VISUALIZE,
+                            DELAY=DELAY, title="weight - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         degree_file.write("{0},{1}\n".format(0,total_infected))
 
@@ -462,8 +465,9 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
 
             title = "weight - {0}%".format(effort/100)
 
-            results = infection(network, strategy, target, VISUALIZE, 
-                                title=title, inf_type=EDGES, DELAY=DELAY)
+            results = infection(network, strategy, target, DELAY=DELAY,
+                                vis=VISUALIZE, 
+                                title=title, inf_type=EDGES)
             total_infected = results["Infected"] + results["Recovered"]
             degree_file.write("{0},{1}\n".format(effort/100,
                                                  total_infected,
@@ -522,7 +526,8 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY):
         betweenness_file.write('"effort","total_infected"\n')
 
         # Generate a baseline
-        results = infection(network, None, target, VISUALIZE,title="Betweenness - 0%")
+        results = infection(network, None, target, vis=VISUALIZE,
+                            title="Betweenness - 0%",DELAY=DELAY)
         total_infected = results["Infected"] + results["Recovered"]
         betweenness_file.write("{0},{1}\n".format(0,total_infected))
 
@@ -532,7 +537,7 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY):
             strategy = [x for x in betweenness[0:max_index]]
 
             title = "betweenness - {0}%".format(effort/100)
-            results = infection(network, strategy, target, VISUALIZE,
+            results = infection(network, strategy, target, vis=VISUALIZE,
                                 title=title, inf_type=EDGES, DELAY=DELAY)
             total_infected = results["Infected"] + results["Recovered"]
             betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
@@ -983,7 +988,7 @@ def calculate_weights(input_network):
 
     return G
 
-def infection(input_network, vaccination, starts, vis = False, file_name = "sir.csv", title="", inf_type=False, DELAY=0):
+def infection(input_network, vaccination, starts,DELAY=0, vis = False, file_name = "sir.csv", title="", inf_type=False):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -1000,6 +1005,7 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
     """
 
     print("Simulating infection.")
+    print(DELAY)
 
     network = input_network.copy()
     
@@ -1045,7 +1051,7 @@ def infection(input_network, vaccination, starts, vis = False, file_name = "sir.
 
         if step == DELAY:
 
-            print("The",DELAY,"step delay ended on step", setep) #TMP
+            print("The",DELAY,"step delay ended on step", step) #TMP
 
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
