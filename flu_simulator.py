@@ -742,17 +742,18 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
         cluster_file.write('"effort","total_infected"\n')
 
         # Generate a baseline
-        results = infection(network, None, target, VISUALIZE,title="Cluster - 0%")
+        results = infection(network, None, target, vis=VISUALIZE,
+                            title="Cluster - 0%", DELAY=DELAY)
         total_infected = results["Infected"] + results["Recovered"]
         cluster_file.write("{0},{1}\n".format(0,total_infected))
 
         # Perform a check for every strategy
         for effort in range(1,101,5):
             max_index = int(len(cluster) * (effort/100))-1
-            strategy = [x for x in cluster[0:max_index]]
+            strategy = cluster[0:max_index]
 
             title = "cluster - {0}%".format(effort/100)
-            results = infection(network, strategy, target, VISUALIZE,
+            results = infection(network, strategy, target, vis=VISUALIZE,
                                 title=title, inf_type=EDGES, DELAY=DELAY)
             total_infected = results["Infected"] + results["Recovered"]
             cluster_file.write("{0},{1}\n".format(effort/100,total_infected))
