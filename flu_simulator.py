@@ -137,7 +137,7 @@ def main():
     random.seed(seed)
 
     # Identify the script.
-    print("Flu Simulator 0.10.3")
+    print("Flu Simulator 0.10.6")
     print("Created by Nicholas A. Yager and Matthew Taylor\n\n")
 
     # Create the network using the command arguments.
