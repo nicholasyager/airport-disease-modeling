@@ -1166,7 +1166,7 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
             elif status is "i":
                 
                 I += 1
-        print("{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R))
+        #print("{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R))
 
         printline = "{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R)
         f.write(printline + "\n")
