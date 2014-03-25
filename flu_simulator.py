@@ -16,10 +16,10 @@ as:
         -d: Add a delay to quarantine simulations.
         -w: Run a simulation based on edge weights.
         -r: Run a random quarantine simulation.
-	-i: Run a simulation based on closing international flights.
-	-c: Run a simulation based on making clusters.
+	    -c: Run a simulation based on making clusters.
         -u: Convert the network to an undirected network.
         -s: Run a naive simulation and output the SIR data.
+        -i: Filter to only quarantine international flights.
 
 """
 
@@ -134,8 +134,11 @@ def main():
     NUM_SIMULATIONS = 100
 
     seed = 100
-
     random.seed(seed)
+
+    # Identify the script.
+    print("Flu Simulator 0.10.3")
+    print("Created by Nicholas A. Yager and Matthew Taylor\n\n")
 
     # Create the network using the command arguments.
     network = create_network(AIRPORT_DATA, ROUTE_DATA)
@@ -170,22 +173,24 @@ def main():
         genetic_simulations(network, 50, 50, target)
 
     if BETWEENNESS:
-        betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY,
+                                INTERNATIONAL)
     
     if WEIGHT:
-        degree_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        degree_simulations(network, target, VISUALIZE, EDGES, DELAY,
+                           INTERNATIONAL)
 
     if RANDOM:
-        random_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        random_simulations(network, target, VISUALIZE, EDGES, DELAY,
+                           INTERNATIONAL)
 
     if SIR:
-        sir_simulations(network, target, VISUALIZE, EDGES, DELAY)
-
-    if INTERNATIONAL:
-        international_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        sir_simulations(network, target, VISUALIZE, EDGES, DELAY,
+                        INTERNATIONAL)
 
     if CLUSTER:
-        cluster_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        cluster_simulations(network, target, VISUALIZE, EDGES, DELAY,
+                            INTERNATIONAL)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
@@ -352,7 +357,7 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
+def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
     """
     Simulate the spread of infection for increasing vaccination efforts by
     quarantining airports randomly.
@@ -373,6 +378,15 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
     # Make a new folder for the degree data.
     os.makedirs("random")
 
+    # Filter international flights if necessary
+    randoms = random.sample(network.edges(), len(network.edges()))
+
+    if I:
+        for i,j in randoms:
+            if network[i][j]["international"] == False:
+                randoms.remove((i,j))
+
+
     iteration = 0
     for target in targets:
 
@@ -386,13 +400,11 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
                             title="Random - 0%")
         total_infected = results["Infected"] + results["Recovered"]
         random_file.write("{0},{1}\n".format(0,total_infected))
-
-        randoms = random.sample(network.nodes(), len(network.nodes()))
-
+        
         # Perform a check for every strategy
         for effort in range(1,101,5):
             max_index = int(len(network.edges()) * (effort/100))-1
-            strategy = network.edges(randoms)[0:max_index]
+            strategy = randoms[0:max_index]
 
             title = "random - {0}%".format(effort/100)
             results = infection(network, strategy, target, vis=VISUALIZE,
@@ -412,7 +424,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY):
 
 
 
-def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
+def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     closing routes of decreasing degree-based weight.
@@ -432,6 +444,13 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
     print("\tCalculating degrees", end="")
     sys.stdout.flush()
     degrees = network.edges(data = True)
+
+    index = 0
+    if I:
+        for i,j,data in degrees:
+            if data["international"] == False:
+                degrees.remove((i,j,data))
+            index += 1
 
     sorted_degree = sorted(degrees, key=lambda k: k[2]['weight'], reverse=True)
     degree = list()
@@ -484,7 +503,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY):
         degree_file.close()
 
 
-def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY):
+def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
@@ -507,6 +526,12 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY):
     betweennesses = nx.edge_betweenness_centrality(network)
     betweenness = sorted(betweennesses.keys(), 
                     key=lambda k: k[1], reverse=True)
+
+    if I:
+        for i,j in betweenness:
+            if not network[i][j]["international"]:
+                betweenness.remove((i,j))
+
 
     print("\t\t\t\t[Done]")
 
@@ -697,7 +722,7 @@ class Vaccination:
         self.closures = len(self.airports)
         self.cleanDuplicates()
 
-def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
+def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports by decreasing local clustering coefficients.
@@ -715,17 +740,19 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY):
     """
 
     print("Local Clustering Coefficient Mode.")
-    print("\tCalculating Local Clustering Coefficients", end="")
     sys.stdout.flush()
     
     clusters = network.edges(data = True)
 
+    if I:
+        for i,j,data in clusters:
+            if not network[i][j]['international']:
+                clusters.remove((i,j,data))
+        
     sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'], reverse=True)
     cluster = list()
     for cluster_item in sorted_cluster:
         cluster.append((cluster_item[0], cluster_item[1]))
-
-    print("\t\t\t\t[Done]")
 
     os.makedirs("cluster")
 
@@ -851,7 +878,8 @@ def create_network(nodes, edges):
            #                name=entries[1], 
            #                lat=entries[6],
            #                lon=entries[7])
-            G.add_node(int(entries[0]), 
+            G.add_node(int(entries[0]),
+                       country=entries[3],
                        name=entries[1], 
                        lat=entries[6],
                        lon=entries[7])
@@ -889,39 +917,52 @@ def create_network(nodes, edges):
     
     print("\t\t\t\t\t\t[Done]")
 
-
-    
-    # Remove nodes without inbound edges
-    indeg = G.in_degree()
-    outdeg = G.out_degree()
-    to_remove = [n for n in indeg if (indeg[n] + outdeg[n] < 1)]
-    
-    G.remove_nodes_from(to_remove)
-
-
     # Limit to the first subgraph
+    print("\tFinding largest subgraph",end="")
     undirected = G.to_undirected()
     subgraphs = nx.connected_component_subgraphs(undirected)
-
     subgraph_nodes = subgraphs[0].nodes()
-
     to_remove = list()
-
     for node in G.nodes():
         if node not in subgraph_nodes:
             to_remove.append(node)
-            
-
     G.remove_nodes_from(to_remove)
-    G = calculate_weights(G)
+    print("\t\t\t\t[Done]")
+
     
+    print("\tRemoving isolated vertices",end="")
+    # Remove nodes without inbound edges
+    indeg = G.in_degree()
+    outdeg = G.out_degree()
+    to_remove = [n for n in indeg if (indeg[n] + outdeg[n] < 1)] 
+    G.remove_nodes_from(to_remove)
+    print("\t\t\t\t[Done]")
+
+
+
+    # Calculate the edge weights
+    print("\tCalculating edge weights",end="")
+    G = calculate_weights(G)
+    print("\t\t\t\t[Done]")
+    
+    # Add clustering data
+    print("\tCalculating clustering coefficents",end="")
     cluster_network = nx.Graph(G)
     lcluster = nx.clustering(cluster_network)
     for i,j in G.edges():
         cluster_sum = lcluster[i] + lcluster[j]
         G[i][j]['cluster'] = cluster_sum
+    print("\t\t\t[Done]")
 
-
+    # Flag flights as domestic or international.
+    print("\tCategorizing international flights",end="")
+    for i,j in G.edges():
+        if G.node[i]["country"] == G.node[j]['country']:
+            G[i][j]['international'] = False
+        else:
+            G[i][j]['international'] = True
+    print("\t\t\t[Done]")
+    
     return G
 
 def calculate_weights(input_network):
@@ -989,7 +1030,8 @@ def calculate_weights(input_network):
 
     return G
 
-def infection(input_network, vaccination, starts,DELAY=0, vis = False, file_name = "sir.csv", title="", inf_type=False):
+def infection(input_network, vaccination, starts,DELAY=0, vis = False, 
+              file_name = "sir.csv", title="", inf_type=False):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -1006,7 +1048,6 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False, file_name
     """
 
     print("Simulating infection.")
-    print(DELAY)
 
     network = input_network.copy()
     
@@ -1050,10 +1091,8 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False, file_name
     # Iterate through the evolution of the disease.
     for step in range(0,99):
 
+        # If the delay is over, vaccinate.
         if step == DELAY:
-
-            print("The",DELAY,"step delay ended on step", step) #TMP
-
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
                 # Recalculate the weights of the network as per necessary
