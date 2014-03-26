@@ -28,49 +28,42 @@ read_to_M <- function(filelist) {
     data = read.csv(filelist[strategy])
     
     for (row in 1:length(data$effort)) {
-      M[strategy,row] <- data$total_infected[row]
+      M[strategy,row] <- data$total_infected[row]/data$total_infected[1]
     }
     
   }
   return(M)
 }
 
-type = "cluster"
+types = c("betweenness","cluster","random","weight")
 
-random <- read_to_M(dir(type,full.names=T))
-
-# Each Row is a data set for an effort. use accordingly.
-
-# 10% effort is row 11
-
-medians = apply(random, 2, mean)
-
-effort = seq(0, 100, 5)
-plot(x=effort, y=medians/3289,
-     main="Effect of quarantine strategies on median number of infections",
-     xlab=paste(type,"-based quarantine effort (%)",sep=""),
-     ylab="Proportion of airports infected", pch=19, type="b",
-     ylim=c(0,1))
-
-abline(h=0, lty="dotted")
-
-data = as.data.frame(cbind(effort, medians/3289))
-names(data) <- c("Effort", "Median")
-
-# A nice distribution graph -------------------------------------------
-
-boxplot(random,
-        main=paste("Distribution of infeceted individuals\nfor a ",type,"-based quaratine strategy",sep=""),
-        xlab="Quarantine Effort", ylab="Number of infected airports",
-        xaxt = "n")
-
-axis(1,1:21, seq(0,100,5))
-lines(apply(random, 2, mean), col="red")
-lines(apply(random, 2, median), col="blue")
-
-write.csv(data, paste(type,".csv",sep=""), row.names=F)
-write.matrix(random, paste(type,".matrix",sep=""), sep=",")
-
+par(mfrow=c(2,2))
+for (type_num in 1:length(types)){
+  
+  type = types[type_num]
+  
+  random <- read_to_M(dir(type,full.names=T))
+  medians = apply(random, 2, mean)
+  
+  effort = seq(0, 100, 5)
+  data = as.data.frame(cbind(effort, medians/3289))
+  names(data) <- c("Effort", "Median")
+  write.csv(data, paste(type,".csv",sep=""), row.names=F)
+  write.matrix(random, paste(type,".matrix",sep=""), sep=",")
+  
+  # A nice distribution graph -------------------------------------------
+  
+  boxplot(random,
+          main=paste(type,"-based quaratine strategy",sep=""),
+          xlab="Quarantine Effort", ylab="Proportion of airports infected",
+          xaxt = "n", ylim=c(0,1.5))
+  
+  axis(1,1:21, seq(0,100,5))
+  lines(apply(random, 2, mean), col="red")
+  lines(apply(random, 2, median), col="blue")
+  
+}
+par(mfrow=c(1,1))
 #image(random, col=rainbow(3000))
 # 
 # 

@@ -74,7 +74,7 @@ colors <- c("gray20",
 
 bp = barplot(M/3287 ,beside=T, col=colors,
              xlab="Quarantine Effort (% of edges closed)", 
-             ylab="Proportion of infected airports",
+             ylab="Proportion of airports infected",
              main="Comparison of Quarantine Strategies with 0 Day Delay",
              ylim=c(0,1)
 )
@@ -83,8 +83,8 @@ plotCI(bp, M/3287, CI95, add=T, pch=NA)
 text(x=as.vector(bp),y=as.vector(M/3287)+CI95,c("A","A","A","A",
                                                 "B","C","D","E",
                                                 "F","G","H","I",
-                                                "J","J","K","L",
-                                                "M","N","O","P"
+                                                "J","K","H","L",
+                                                "M","J","N","O"
                                                 ), pos=3,cex=0.8)
 
 abline(h=0)
