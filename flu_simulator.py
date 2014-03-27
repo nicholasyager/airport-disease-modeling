@@ -20,6 +20,7 @@ as:
         -u: Convert the network to an undirected network.
         -s: Run a naive simulation and output the SIR data.
         -i: Filter to only quarantine international flights.
+        -q: Filter to only quarantine domestic flights.
 
 """
 
@@ -65,16 +66,18 @@ def main():
     VISUALIZE = False
     EDGES = False
     INTERNATIONAL = False
+    DOMESTIC = False
     CLUSTER = False
     DELAY = 0
 
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "wbgd:icrusve", [ "Weight",
+    opts, args = getopt.getopt(sys.argv[1:], "wbgd:iqcrusve", [ "Weight",
                                                             "Betweenness",
                                                             "Genetic",
                                                             "Delay",
                                                             "Cluster",
                                                             "International",
+                                                            "Domestic",
                                                             "Random",
                                                             "Undirect",
                                                             "SIR",
@@ -92,6 +95,7 @@ def main():
         print("\t-u: Convert the network to an undirected network.")
         print("\t-s: Run a naive simulation and output the SIR data.")
         print("\t-c: Run a simulation based on local clustering coefficients.")
+        print("\t-q: Run a simulation based on domestic quarantine.")
         print("\t-i: Run a simulation based on international quarantine.\n")
         exit()
 
@@ -127,6 +131,8 @@ def main():
             EDGES = True
         elif o == "-i":
             INTERNATIONAL = True
+        elif o == "-q":
+            DOMESTIC = True
         elif o == "-c":
             CLUSTER = True
             
@@ -174,23 +180,22 @@ def main():
 
     if BETWEENNESS:
         betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                                INTERNATIONAL)
+                                INTERNATIONAL, DOMESTIC)
     
     if WEIGHT:
         degree_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                           INTERNATIONAL)
+                           INTERNATIONAL, DOMESTIC)
 
     if RANDOM:
         random_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                           INTERNATIONAL)
+                           INTERNATIONAL, DOMESTIC)
 
     if SIR:
-        sir_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                        INTERNATIONAL)
+        sir_simulations(network, target, VISUALIZE, EDGES, DELAY)
 
     if CLUSTER:
         cluster_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                            INTERNATIONAL)
+                            INTERNATIONAL, DOMESTIC)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
@@ -248,7 +253,7 @@ def sir_simulations(network, targets, VISUALIZE, EDGES, DELAY):
         print(target)
         sir_file = "sir/sir_{0}.csv".format(pad_string(iteration,4))
 
-        results = infection(network, None, target, VISUALIZE, sir_file )
+        results = infection(network, None, target, vis=VISUALIZE, file_name=sir_file )
         N = results["Suscceptable"] + results["Infected"] + results["Recovered"]
         iteration += 1
 
@@ -357,7 +362,7 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
+def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q):
     """
     Simulate the spread of infection for increasing vaccination efforts by
     quarantining airports randomly.
@@ -385,7 +390,10 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
         for i,j in randoms:
             if network[i][j]["international"] == False:
                 randoms.remove((i,j))
-
+    if Q:
+        for i,j in randoms:
+            if network[i][j]["domestic"] == False:
+                randoms.remove((i,j))
 
     iteration = 0
     for target in targets:
@@ -424,7 +432,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
 
 
 
-def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
+def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     closing routes of decreasing degree-based weight.
@@ -449,6 +457,11 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
     if I:
         for i,j,data in degrees:
             if data["international"] == False:
+                degrees.remove((i,j,data))
+            index += 1
+    if Q:
+        for i,j,data in degrees:
+            if data["domestic"] == False:
                 degrees.remove((i,j,data))
             index += 1
 
@@ -503,7 +516,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I):
         degree_file.close()
 
 
-def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I):
+def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
@@ -531,7 +544,10 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I):
         for i,j in betweenness:
             if not network[i][j]["international"]:
                 betweenness.remove((i,j))
-
+    if Q:
+        for i,j in betweenness:
+            if not network[i][j]["domestic"]:
+                betweenness.remove((i,j))
 
     print("\t\t\t\t[Done]")
 
@@ -722,7 +738,7 @@ class Vaccination:
         self.closures = len(self.airports)
         self.cleanDuplicates()
 
-def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I):
+def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports by decreasing local clustering coefficients.
@@ -748,7 +764,11 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I):
         for i,j,data in clusters:
             if not network[i][j]['international']:
                 clusters.remove((i,j,data))
-        
+    if Q:
+        for i,j,data in clusters:
+            if not network[i][j]['domestic']:
+                clusters.remove((i,j,data))
+    
     sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'], reverse=True)
     cluster = list()
     for cluster_item in sorted_cluster:
@@ -955,14 +975,18 @@ def create_network(nodes, edges):
     print("\t\t\t[Done]")
 
     # Flag flights as domestic or international.
-    print("\tCategorizing international flights",end="")
+    print("\tCategorizing international and domestic flights",end="")
     for i,j in G.edges():
         if G.node[i]["country"] == G.node[j]['country']:
             G[i][j]['international'] = False
         else:
             G[i][j]['international'] = True
-    print("\t\t\t[Done]")
-    
+        if G.node[i]["country"] == G.node[j]['country']:
+            G[i][j]['domestic'] = True
+        else:
+            G[i][j]['domestic'] = False
+    print("\t\t[Done]")
+
     return G
 
 def calculate_weights(input_network):
@@ -1166,7 +1190,7 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
             elif status is "i":
                 
                 I += 1
-        #print("{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R))
+        print("{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R))
 
         printline = "{0}, {1}, {2}, {3}, {4}".format(step, S, E, I, R)
         f.write(printline + "\n")
