@@ -1090,9 +1090,9 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
 
     # Iterate through the evolution of the disease.
     for step in range(0,99):
-
         # If the delay is over, vaccinate.
-        if step == DELAY:
+        # Convert the STRING! 
+        if int(step) == int(DELAY):
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
                 # Recalculate the weights of the network as per necessary
