@@ -21,6 +21,7 @@ as:
         -s: Run a naive simulation and output the SIR data.
         -i: Filter to only quarantine international flights.
         -q: Filter to only quarantine domestic flights.
+        -y: Disable recalculation of network edges.
 
 """
 
@@ -68,10 +69,11 @@ def main():
     INTERNATIONAL = False
     DOMESTIC = False
     CLUSTER = False
+    RECALCULATE = True
     DELAY = 0
 
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "wbgd:iqcrusve", [ "Weight",
+    opts, args = getopt.getopt(sys.argv[1:], "wbgd:iqcrusvey", [ "Weight",
                                                             "Betweenness",
                                                             "Genetic",
                                                             "Delay",
@@ -82,6 +84,7 @@ def main():
                                                             "Undirect",
                                                             "SIR",
                                                             "visualize",
+                                                            "Recalculate",
                                                             "ByEdge" ]
                                                             )
 
@@ -89,6 +92,7 @@ def main():
     if len(args) < 2:
         print("\nflu_simulator.py -gbdrus <airport database> <route database>\n")
         print("Flags:\n\t-g: Run a genetic algorithm quarantine simulation.")
+        print("\t-y: Disable network edge recalculation.")
         print("\t-b: Run a betweenness-based quarantine simulation.")
         print("\t-d: Run a degree-based quarantine simulation.")
         print("\t-r: Run a random quarantine simulation.")
@@ -135,6 +139,8 @@ def main():
             DOMESTIC = True
         elif o == "-c":
             CLUSTER = True
+        elif o == "-y":
+            RECALCULATE = False
             
     #NUM_SIMULATIONS = 344
     NUM_SIMULATIONS = 100
@@ -180,22 +186,22 @@ def main():
 
     if BETWEENNESS:
         betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                                INTERNATIONAL, DOMESTIC)
+                                INTERNATIONAL, DOMESTIC, RECALCULATE)
     
     if WEIGHT:
         degree_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                           INTERNATIONAL, DOMESTIC)
+                           INTERNATIONAL, DOMESTIC, RECALCULATE)
 
     if RANDOM:
         random_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                           INTERNATIONAL, DOMESTIC)
+                           INTERNATIONAL, DOMESTIC, RECALCULATE)
 
     if SIR:
-        sir_simulations(network, target, VISUALIZE, EDGES, DELAY)
+        sir_simulations(network, target, VISUALIZE, EDGES, DELAY, RECALCULATE)
 
     if CLUSTER:
         cluster_simulations(network, target, VISUALIZE, EDGES, DELAY,
-                            INTERNATIONAL, DOMESTIC)
+                            INTERNATIONAL, DOMESTIC, RECALCULATE)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
@@ -226,7 +232,7 @@ def pad_string(integer, n):
 
     return string
 
-def sir_simulations(network, targets, VISUALIZE, EDGES, DELAY):
+def sir_simulations(network, targets, VISUALIZE, EDGES, DELAY, RECALCULATE):
     """
     Run an infection simulation across the network for each of the given
     targets, and determine the median number of infected per day.
@@ -362,7 +368,7 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q):
+def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
     """
     Simulate the spread of infection for increasing vaccination efforts by
     quarantining airports randomly.
@@ -432,7 +438,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q):
 
 
 
-def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q):
+def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     closing routes of decreasing degree-based weight.
@@ -516,7 +522,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q):
         degree_file.close()
 
 
-def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q):
+def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports of decreasing betweenness.
@@ -738,7 +744,7 @@ class Vaccination:
         self.closures = len(self.airports)
         self.cleanDuplicates()
 
-def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q):
+def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
     """
     Simulate the spread of infection for increasing vaccination efforts by 
     quarantining airports by decreasing local clustering coefficients.
@@ -1055,7 +1061,7 @@ def calculate_weights(input_network):
     return G
 
 def infection(input_network, vaccination, starts,DELAY=0, vis = False, 
-              file_name = "sir.csv", title="", inf_type=False):
+              file_name = "sir.csv", title="", inf_type=False, RECALCULATE = True):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
@@ -1120,7 +1126,8 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
             if vaccination is not None:
                 network.remove_edges_from(vaccination)
                 # Recalculate the weights of the network as per necessary
-                network = calculate_weights(network)
+                if RECALCULATE == True:
+                    network = calculate_weights(network)
 
 
         # Create variables to hold the outcomes as they happen
