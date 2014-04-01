@@ -1,6 +1,4 @@
-#!/usr/bin/python
-
-
+#!/usr/bin/python3
 """
 flu_simulator.py is a simulator for a flu-like infection spreading across a 
 network between airports (nodes) via air travel routes (edges). The goal of this
@@ -417,7 +415,7 @@ def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCUL
         
         # Perform a check for every strategy
         for effort in range(1,101,5):
-            max_index = int(len(network.edges()) * (effort/100))-1
+            max_index = int(len(randoms) * (effort/100))-1
             strategy = randoms[0:max_index]
 
             title = "random - {0}%".format(effort/100)
@@ -496,7 +494,7 @@ def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCUL
 
         # Perform a check for every strategy
         for effort in range(1,101,5):
-            max_index = int(len(network.edges()) * (effort/100))-1
+            max_index = int(len(degree) * (effort/100))-1
             strategy = degree[0:max_index]
 
             edges_closed = len(strategy)
