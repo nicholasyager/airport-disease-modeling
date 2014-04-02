@@ -53,28 +53,30 @@ tx <- with(data.stacked, interaction(effort, qtype))
  library(multcomp)
 data <- HSD.test(data.aov.tk, "tx" ,group=T)
 
-M <- tapply(data.stacked$infected,list(data.stacked$qtype, data.stacked$effort),median)
+M <- tapply(data.stacked$infected,list(data.stacked$qtype, data.stacked$effort),mean)
+sd <- tapply(data.stacked$infected,list(data.stacked$qtype, data.stacked$effort),sd)
+n <- tapply(data.stacked$infected,list(data.stacked$qtype, data.stacked$effort),length)
 #M <- M[,order(M[2,],decreasing=T)]
 
-CI95 = qt(1-0.05/2,9)*(sd(data.stacked$infected)/sqrt(length(data.stacked$infected))) / 3287
+CI95 = (qnorm(0.975)  * sd / sqrt(n) )   / 3286
 
 colors <- c("gray20",
             "gray50",
             "gray80")
 
-bp = barplot(M/3287 ,beside=T, col=colors,
+bp = barplot(M/3286 ,beside=T, col=colors,
              xlab="Closure Effort (% of routes canceled)", 
              ylab="Proportion of Airports Infected",
-             main="Comparison of International Cancelation Strategies",
+             main="Comparison of Cancelation Strategies",
              ylim=c(0,0.5)
 )
 legend("topright", legend=rownames(M), fill=colors, cex=0.8)
-plotCI(bp, M/3287, CI95, add=T, pch=NA)
-text(x=as.vector(bp),y=as.vector(M/3287)+CI95,c("D","D","CD",
-                                                "E","F","CD",
-                                                "G","H","A",
-                                                "J","I","AB",
-                                                "K","J","CD"
+plotCI(bp, as.vector(M)/3286, CI95, add=T, pch=NA)
+text(x=as.vector(bp),y=as.vector(M/3286)+CI95,c("B","B","B",
+                                                "D","C","A",
+                                                "G","F","E",
+                                                "J","I","H",
+                                                "M","L","K"
                                                 ), pos=3,cex=0.8)
 
 abline(h=0)
