@@ -28,14 +28,14 @@ read_to_M <- function(filelist) {
     data = read.csv(filelist[strategy])
     
     for (row in 1:length(data$effort)) {
-      M[strategy,row] <- data$total_infected[row]/data$total_infected[1]
+      M[strategy,row] <- data$total_infected[row]
     }
     
   }
   return(M)
 }
 
-types = c("betweenness","cluster","random","weight")
+types = c("betweenness","random","cluster")
 
 par(mfrow=c(2,2))
 for (type_num in 1:length(types)){
@@ -46,7 +46,7 @@ for (type_num in 1:length(types)){
   medians = apply(random, 2, mean)
   
   effort = seq(0, 100, 5)
-  data = as.data.frame(cbind(effort, medians/3289))
+  data = as.data.frame(cbind(effort, medians))
   names(data) <- c("Effort", "Median")
   write.csv(data, paste(type,".csv",sep=""), row.names=F)
   write.matrix(random, paste(type,".matrix",sep=""), sep=",")
@@ -56,7 +56,7 @@ for (type_num in 1:length(types)){
   boxplot(random,
           main=paste(type,"-based quaratine strategy",sep=""),
           xlab="Quarantine Effort", ylab="Proportion of airports infected",
-          xaxt = "n", ylim=c(0,1.5))
+          xaxt = "n")
   
   axis(1,1:21, seq(0,100,5))
   lines(apply(random, 2, mean), col="red")

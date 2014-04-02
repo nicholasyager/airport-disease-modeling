@@ -2,7 +2,6 @@ library(plotrix)
 library(agricolae)
 
 R <- as.data.frame(read.csv("random.matrix",header=F))
-D <- as.data.frame(read.csv("weight.matrix",header=F))
 B <- as.data.frame(read.csv("betweenness.matrix",header=F))
 C <- as.data.frame(read.csv("cluster.matrix",header=F))
 
@@ -20,16 +19,8 @@ for (i in efforts) {
   }
 }
 for (i in efforts) {
-  for (j in 1:50) {
-    r[k,1] <- "Weight"
-    r[k,2] <- as.character((i-1)*5)
-    r[k,3] <- D[j,i]
-    k = k + 1
-  }
-}
-for (i in efforts) {
   for (j in 1:length(B[,1])) {
-    r[k,1] <- "Betweenness"
+    r[k,1] <- "Betweenness Centrality"
     r[k,2] <- as.character((i-1)*5)
     r[k,3] <- B[j,i]
     k = k + 1
@@ -68,23 +59,22 @@ M <- tapply(data.stacked$infected,list(data.stacked$qtype, data.stacked$effort),
 CI95 = qt(1-0.05/2,9)*(sd(data.stacked$infected)/sqrt(length(data.stacked$infected))) / 3287
 
 colors <- c("gray20",
-            "gray40",
-            "gray60",
+            "gray50",
             "gray80")
 
 bp = barplot(M/3287 ,beside=T, col=colors,
-             xlab="Quarantine Effort (% of edges closed)", 
-             ylab="Proportion of airports infected",
-             main="Comparison of Quarantine Strategies with 0 Day Delay",
-             ylim=c(0,1)
+             xlab="Closure Effort (% of routes canceled)", 
+             ylab="Proportion of Airports Infected",
+             main="Comparison of International Cancelation Strategies",
+             ylim=c(0,0.5)
 )
 legend("topright", legend=rownames(M), fill=colors, cex=0.8)
 plotCI(bp, M/3287, CI95, add=T, pch=NA)
-text(x=as.vector(bp),y=as.vector(M/3287)+CI95,c("A","A","A","A",
-                                                "B","C","D","E",
-                                                "F","G","H","I",
-                                                "J","K","H","L",
-                                                "M","J","N","O"
+text(x=as.vector(bp),y=as.vector(M/3287)+CI95,c("D","D","CD",
+                                                "E","F","CD",
+                                                "G","H","A",
+                                                "J","I","AB",
+                                                "K","J","CD"
                                                 ), pos=3,cex=0.8)
 
 abline(h=0)
