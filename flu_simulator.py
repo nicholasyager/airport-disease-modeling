@@ -141,7 +141,7 @@ def main():
             RECALCULATE = False
             
     #NUM_SIMULATIONS = 344
-    NUM_SIMULATIONS = 100
+    NUM_SIMULATIONS = 10
 
     seed = 100
     random.seed(seed)
@@ -542,7 +542,7 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECA
     sys.stdout.flush()
     betweennesses = nx.edge_betweenness_centrality(network)
     betweenness = sorted(betweennesses.keys(), 
-                    key=lambda k: k[1], reverse=True)
+                    key=lambda k:betweennesses[k], reverse=True)
 
     if I:
         for i,j in betweenness:
@@ -579,7 +579,7 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECA
         # Perform a check for every strategy
         for effort in range(1,101,5):
             max_index = int(len(betweenness) * (effort/100))-1
-            strategy = [x for x in betweenness[0:max_index]]
+            strategy = betweenness[0:max_index]
 
             title = "betweenness - {0}%".format(effort/100)
             results = infection(network, strategy, target, vis=VISUALIZE,
@@ -1089,14 +1089,14 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
     sys.stdout.flush()
     for node in network.nodes():
         network.node[node]["status"] =  "s"
-        network.node[node]["color"] = "b"
+        network.node[node]["color"] = "#A0C8F0"
         network.node[node]["age"] = 0
     
     # Assign the infected
     for start in starts:
         infected = start
         network.node[infected]["status"] = "i"
-        network.node[infected]["color"]  = "orange"
+        network.node[infected]["color"]  = "green"
         
         if isinstance(network,nx.DiGraph):
             in_degree = network.in_degree()[infected] 
@@ -1139,12 +1139,12 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
             if status is "i" and age >= 11:
                 # The infected has reached its recovery time
                 network.node[node]["status"] = "r"
-                network.node[node]["color"] = "g"
+                network.node[node]["color"] = "purple"
                 
             if status is "e" and age >= 3 and age < 11:
                 # The infected has reached its recovery time
                 network.node[node]["status"] = "i"
-                network.node[node]["color"] = "o"
+                network.node[node]["color"] = "green"
 
             elif status is "e":
                 network.node[node]["age"] += 1
@@ -1168,7 +1168,7 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
                         if infect_status == "s" and infect == True:
                             network.node[victim]["status"] = "e"
                             network.node[victim]["age"] = 0
-                            network.node[victim]["color"] = "orange"
+                            network.node[victim]["color"] = "#FF6F00"
                 network.node[node]["age"] += 1
 
 
@@ -1205,9 +1205,9 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
         if I is 0:
             break
 
-    if vis:
-        #write_dot(network, title+".dot")
-        visualize(network, title, pos)
+        if vis:
+            #write_dot(network, title+".dot")
+            visualize(network, title, pos)
         
     print("\t----------\n\tS: {0}, I: {1}, R: {2}".format(S,I,R))
 
@@ -1218,7 +1218,7 @@ def visualize(network, title,pos):
     """
     Visualize the network given an array of posisitons.
     """
-
+    print("-- Starting to Visualize --")
     MAP = False
 
     if MAP:
@@ -1239,30 +1239,61 @@ def visualize(network, title,pos):
             pos[pos_node] = [x,y]
 
 
-    # Remove nodes without inbound edges
-    indeg = network.in_degree()
-    outdeg = network.out_degree()
-    to_remove = [n for n in indeg if (indeg[n] + outdeg[n] < 1)]
-    
-    network.remove_nodes_from(to_remove)
-
-
     colors = []
+    i_edge_colors = []
+    d_edge_colors = []
+    default = []
+    infected = []
     for node in network.nodes():
         colors.append(network.node[node]["color"])
+    for i,j in network.edges():
+        color = network.node[i]["color"]
+        alpha = 0.75
+        if color == "#A0C8F0" or color == "#FF6F00" or color == "purple":
+            color = "#A6A6A6"
+            default.append((i,j))
+            d_edge_colors.append(color)
+        else:
+            color = "#29A229"
+            infected.append((i,j))
+            i_edge_colors.append(color)
 
-    plt.figure(figsize=(8,8))
+    plt.figure(figsize=(7,7))
 
-    nx.draw_networkx_edges(network,pos,
-            width=1,
-            edge_color='black',
+    # Fist pass - Gray lines
+    nx.draw_networkx_edges(network,pos,edgelist=default,
+            width=0.5,
+            edge_color=d_edge_colors,
+            alpha=0.5,
             arrows=False)
+   
+    # Second Pass - Colored lines
+    nx.draw_networkx_edges(network,pos,edgelist=infected,
+            width=0.5,
+            edge_color=i_edge_colors,
+            alpha=0.75,
+            arrows=False)
+
     nx.draw_networkx_nodes(network,
             pos,
+            linewidths=0.5,
             node_size=10,
             with_labels=False,
             node_color = colors)
+    
+    # Adjust the plot limits
+    cut = 1.05
+    xmax = cut * max(xx for xx,yy in pos.values())
+    xmin =  min(xx for xx,yy in pos.values())
+    xmin = xmin - (cut * xmin)
 
+
+    ymax = cut * max(yy for xx,yy in pos.values())
+    ymin = (cut) * min(yy for xx,yy in pos.values())
+    ymin = ymin - (cut * ymin)
+
+    plt.xlim(xmin,xmax)
+    plt.ylim(ymin,ymax)
 
     if MAP:
         # Draw the map
@@ -1275,9 +1306,8 @@ def visualize(network, title,pos):
     while len(number_files) < 3:
         number_files = "0" + number_files
 
-    
     plt.savefig("infection-{0}.png".format(number_files),
-                bbox_inches='tight', dpi=100 
+                bbox_inches='tight', dpi=600 
             )
     plt.close()
 
