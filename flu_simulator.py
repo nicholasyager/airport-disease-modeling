@@ -774,10 +774,23 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCUL
             if not network[i][j]['domestic']:
                 clusters.remove((i,j,data))
     
-    sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'], reverse=True)
+    sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'], reverse=False)
+
+
     cluster = list()
     for cluster_item in sorted_cluster:
-        cluster.append((cluster_item[0], cluster_item[1]))
+        if network[cluster_item[0]][cluster_item[1]]['cluster'] > 0:
+            cluster.append((cluster_item[0], cluster_item[1]))
+
+    """
+    iterator = 1
+    for i,j in cluster:
+        print(network[i][j]['IATAFrom'],network[i][j]['IATATo'],network[i][j]['cluster'])
+        if iterator == 10:
+            exit()
+        else:
+            iterator += 1
+    """
 
     os.makedirs("cluster")
 
