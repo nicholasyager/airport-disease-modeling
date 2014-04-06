@@ -540,9 +540,10 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECA
     print("Betweenness Centrality Mode.")
     print("\tCalculating betweenness centrality", end="")
     sys.stdout.flush()
-    betweennesses = nx.edge_betweenness_centrality(network)
+
+    betweennesses = nx.edge_betweenness_centrality(network,weight="weight")
     betweenness = sorted(betweennesses.keys(), 
-                    key=lambda k:betweennesses[k], reverse=True)
+                    key=lambda k: betweennesses[k], reverse=True)
 
     if I:
         for i,j in betweenness:
