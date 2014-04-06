@@ -141,7 +141,7 @@ def main():
             RECALCULATE = False
             
     #NUM_SIMULATIONS = 344
-    NUM_SIMULATIONS = 10
+    NUM_SIMULATIONS = 100
 
     seed = 100
     random.seed(seed)
