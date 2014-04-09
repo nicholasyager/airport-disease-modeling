@@ -2,9 +2,8 @@
 """
 simulator.py is a simulator for an example infection spreading across a 
 network between airports (nodes) via air travel routes (edges). The goal of this
-simulation is to test a genetic algorithim to find the optimal vaccination 
-strategy for the given network. Data is loaded with command-line arguments such
-as:
+simulation is to test edge-based quarantine strategies for the given network. 
+Data is loaded with command-line arguments such as:
 
     simulator.py -gbdrus <airport database> <route database>
 
@@ -140,27 +139,24 @@ def main():
         elif o == "-y":
             RECALCULATE = False
             
-    #NUM_SIMULATIONS = 344
     NUM_SIMULATIONS = 100
-
-    print(DELAY)
 
     seed = 100
     random.seed(seed)
 
     # Identify the script.
-    print("Flu Simulator 0.10.6")
+    print("Flu Simulator 1.11.5")
     print("Created by Nicholas A. Yager and Matthew Taylor\n\n")
 
     # Create the network using the command arguments.
     network = create_network(AIRPORT_DATA, ROUTE_DATA)
   
-    degrees = network.degree() 
+    # Generate target-selection weights, and choose target vertices to infect.
+    degrees = network.degree()
     weights = dict()
     for airport, degree in degrees.items():
         weights[airport] = network.out_degree(airport) +\
                            network.in_degree(airport)
-    
     target = list()
     for ind in range(0,NUM_SIMULATIONS):
         target_round = list()
@@ -169,6 +165,7 @@ def main():
              if chosen_airport not in target_round:
                  target_round.append(chosen_airport)
         target.append(target_round)
+
 
     if UNDIRECT:
         network = network.to_undirected()
@@ -179,10 +176,7 @@ def main():
     os.chdir(currenttime)
 
     # Record relevent data about the simulation.
-    # simulation_data(network, currenttime, target, seed)
-
-    if GENETIC:
-        genetic_simulations(network, 50, 50, target)
+    simulation_data(network, currenttime, target, seed)
 
     if BETWEENNESS:
         betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY,
@@ -551,151 +545,6 @@ def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECA
         iteration += 1
         betweenness_file.close()
 
-def genetic_simulations(network, num_strategies, max_generations, target):
-    """
-    A procedure to stochastically simulate quarantine strategies using a
-    niched Pareto genetic algorithm to determine the most fit strategies.
-
-    Args:
-        network: A NetworkX graph object.
-        num_strategies: The number of strategies to test per simulation.
-        max_generations: The number of generations to simulate.
-        target: The initial infection vertex.
-    
-    Returns:
-        Void.
-
-    IO:
-        pareto_*.csv: Files containing data on the fitness values for
-            each strategy for each generation.
-    """
-    # Create 50 vaccination strategies.
-    os.makedirs("pareto")
-    nodes = network.nodes()
-    vaccinations = list()
-    chromosome_ids = 1
-
-    for i in range(0,num_strategies):
-        number_of_airports = random.randint(1,3000)
-        airports = random.sample(nodes,number_of_airports)
-        vaccinations.append(Vaccination(airports, chromosome_ids))
-        chromosome_ids += 1
-
-    
-        
-    for generation in range(0,max_generations):
-
-        print(generation)
-
-        # Test the strategies
-
-        genetic_test(network, vaccinations, target)
-        calculate_fitnesses(vaccinations)
-
-        vaccinations = copy.deepcopy(sorted(vaccinations, 
-                                            key=lambda k: k.shared_fitness,
-                                            reverse=True) 
-                                    )
-
-        infected = list()
-        closures = list()
-        colors = list()
-        highest_fitness = vaccinations[0].shared_fitness
-        lowest_fitness = vaccinations[-1].shared_fitness
-        print("High: ",highest_fitness," Low: ",lowest_fitness)
-        
-
-        # Open a file for the pareto data.
-        pareto_file = open("pareto/pareto_{0}.csv".format(generation), 'w')
-        pareto_file.write('"ID","infected","closures","fitness"\n')
-
-        for strat in vaccinations:
-            infected.append(strat.infected)
-            closures.append(int(strat.closures))
-            relative_fitness = (strat.shared_fitness - lowest_fitness) / \
-                               (highest_fitness - lowest_fitness)
-            pareto_file
-            colors.append(str(1-relative_fitness))
-            #plt.text(strat.closures,strat.infected,strat.ID)
-            pareto_file.write('{0},{1},{2},{3}\n'.format(strat.ID,
-                                                         infected[-1], 
-                                                         closures[-1], 
-                                                         strat.shared_fitness))
-
-
-        pareto_file.close()
-
-        if generation is max_generations - 1:
-            print(vaccinations[0].airports)
-            continue
-
-
-        for index in range(int(num_strategies/2), num_strategies):
-            limit = int(num_strategies/5)
-            parent = copy.deepcopy(random.choice(vaccinations[0:limit]))
-            vaccinations[index] = Vaccination(parent.airports,
-                                              chromosome_ids)
-            option = random.randint(1,2)
-            if option == 1:
-                vaccinations[index].mutate(network.nodes())
-            elif option == 2:
-                other_strat = copy.deepcopy(random.choice(vaccinations[0:limit]))
-                vaccinations[index].recombine(other_strat)
-            else:
-                print(vaccinations[index].ID, "- No genetic change")
-            chromosome_ids += 1
-    return 
-
-
-class Vaccination:
-
-    def __init__(self, airports, ID):
-        self.closures = len(airports)
-        self.airports = copy.deepcopy(airports)
-        self.fitness = 0
-        self.shared_fitness= 0
-        self.ID = ID
-
-    def cleanDuplicates(self):
-
-        #self.airports = list(set(self.airports))
-        #self.closures = len(self.airports)
-        pass
-
-    def recombine(self, other_strategy):
-        print(self.ID, "- Recombining with another strategy.")
-        other_strategy = copy.deepcopy(other_strategy)
-        number_to_take = random.randint(1, other_strategy.closures-1)
-        print(number_to_take, len(other_strategy.airports))
-        self.airports.extend(copy.deepcopy(random.sample(other_strategy.airports,
-                                                         number_to_take)))
-        self.closures = len(self.airports)
-
-        self.cleanDuplicates()
-
-    def mutate(self, nodes):
-        operation = random.randint(1,2)
-
-        if self.closures < 3:
-            operation = 1
-
-        if operation is 1:
-            # Add a new airport.
-            print(self.ID, "- Adding an airport")
-            number_to_add = random.randint(1,int(self.closures/2))
-            self.airports.extend(copy.deepcopy(random.sample(nodes,
-                                                             number_to_add)))
-
-        if operation is 2:
-            print(self.ID, "- Removing an airport")
-            num_to_remove = random.randint(1,int(self.closures/2))
-            to_remove = sorted(random.sample(range(0,self.closures-1), 
-                                             num_to_remove),
-                               reverse=True)
-            for item in to_remove:
-                self.airports.pop(item)
-        self.closures = len(self.airports)
-        self.cleanDuplicates()
 
 def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
     """
@@ -779,60 +628,6 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCUL
 
         iteration += 1
         cluster_file.close()
-
-
-def genetic_test(network, vaccinations, target):
-    """
-    genetic_test
-    """
-    for vaccination in vaccinations:
-        print(vaccination.ID)
-        results = infection(network, vaccination.airports, target, False)
-        d = math.sqrt( math.pow(results["Infected"]+results["Recovered"],2) +\
-                        math.pow(vaccination.closures,2))
-        vaccination.fitness = -1 * (d)^2
-        vaccination.infected = results["Infected"] + results["Recovered"]
-
-
-def calculate_fitnesses(vaccinations):
-    """
-    Calculate the shared Pareto Niche fitness for a list of vaccination 
-    strategies.
-
-    Args:
-        vaccinations: A list of vaccination strategies.
-    """
-    # Calculate the fitness with a pareto niche algorithim
-    for strategy in vaccinations:
-
-        Mi = 0
-        # Compare with the other vaccinations
-        for other_strategy in vaccinations:
-            # Dont compare yourself.
-            if strategy == other_strategy:
-                continue
-
-            # Distance calculation
-            delta_infected = math.pow(other_strategy.infected -\
-                                      strategy.infected,2)
-            delta_closures = math.pow(other_strategy.closures -\
-                                      strategy.closures, 2)
-            distance = math.sqrt( delta_infected + delta_closures)
-
-            # Shared function
-            Sigma_share = 100
-            if distance <= Sigma_share:
-                Mi += 1 - (distance/Sigma_share)
-            elif distance <= 1:
-                Mi += 1
-
-        # Shared fitness:
-        if Mi > 0:
-            strategy.shared_fitness = strategy.fitness / Mi    
-        else:
-            strategy.shared_fitness = strategy.fitness
-
-    return
    
 def create_network(nodes, edges):
     """
@@ -859,11 +654,6 @@ def create_network(nodes, edges):
         for line in f.readlines():
             entries = line.replace('"',"").rstrip().split(",")
 
-           # if entries[3] == "United States":
-           #     G.add_node(entries[0], 
-           #                name=entries[1], 
-           #                lat=entries[6],
-           #                lon=entries[7])
             G.add_node(int(entries[0]),
                        country=entries[3],
                        name=entries[1], 
@@ -947,10 +737,6 @@ def create_network(nodes, edges):
             G[i][j]['international'] = False
         else:
             G[i][j]['international'] = True
-        if G.node[i]["country"] == G.node[j]['country']:
-            G[i][j]['domestic'] = True
-        else:
-            G[i][j]['domestic'] = False
     print("\t\t[Done]")
 
     return G
@@ -1273,28 +1059,6 @@ def visualize(network, title,pos):
                 bbox_inches='tight', dpi=600 
             )
     plt.close()
-
-def write_dot(network, path):
-    """
-    Write a DOT file for external network rendering. This function is necessary
-    due to networkx incompentence.
-
-    Args:
-        network: A NetworkX graph object.
-        path: A local path for the output file.
-    """
-
-    dot_file = open(path, "w")
-
-    # Write header info
-    dot_file.write("digraph network {\n")
-    
-    for node in network.nodes():
-        neighbors = network.neighbors(node)
-        for neighbor in neighbors:
-            dot_file.write("\t{0} -> {1};\n".format(node, neighbor))
-
-    dot_file.write("}")
 
 if __name__ == "__main__":
     main()
