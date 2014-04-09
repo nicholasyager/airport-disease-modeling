@@ -1,12 +1,12 @@
 #!/usr/bin/python3
 """
-flu_simulator.py is a simulator for a flu-like infection spreading across a 
+simulator.py is a simulator for an example infection spreading across a 
 network between airports (nodes) via air travel routes (edges). The goal of this
 simulation is to test a genetic algorithim to find the optimal vaccination 
 strategy for the given network. Data is loaded with command-line arguments such
 as:
 
-    flu_simulator.py -gbdrus <airport database> <route database>
+    simulator.py -gbdrus <airport database> <route database>
 
     Flags:
         -g: Run a genetic algorithm quarantine simulation.
@@ -23,8 +23,8 @@ as:
 
 """
 
-# Title:  flu_simulator.py
-# Author: Nicholas A. Yager
+# Title:  simulator.py
+# Authors: Nicholas A. Yager and Matthew Taylor
 # Date:   2013-01-12
 
 import copy
