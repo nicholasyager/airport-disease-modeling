@@ -143,6 +143,8 @@ def main():
     #NUM_SIMULATIONS = 344
     NUM_SIMULATIONS = 100
 
+    print(DELAY)
+
     seed = 100
     random.seed(seed)
 
@@ -265,7 +267,7 @@ def sir_simulations(network, targets, VISUALIZE, EDGES, DELAY, RECALCULATE):
 def simulation_data(network, time, targets, seed):
     """
     Output various statistics of the nature of the network to a file, including
-    the diameter, the number of cycles, number of verticies and edges, and the
+    the diameter, the number of verticies and edges, and the
     average in and out degrees.
 
     Args:
@@ -278,32 +280,6 @@ def simulation_data(network, time, targets, seed):
         network.dat: A file with all of the relevent netowkr information.
 
     """
-
-    print("\tWriting graph edgelist")
-
-    print("\tCalculating edge betweenness centrality")
-    edge_betweenness = nx.edge_betweenness_centrality(network)
-    print(edge_betweenness)
-
-    edgelist = open("edgelist.csv", "w")
-    edgelist.write('"IATA_From","IATA_To","Edge_Betweenness"\n')
-
-    for edge in network.edges():
-        from_vertex = edge[0]
-        to_vertex = edge[1]
-
-        # Collect data
-        IATAFrom = network[from_vertex][to_vertex]['IATAFrom']
-        IATATo = network[from_vertex][to_vertex]['IATATo']
-        betweenness = edge_betweenness[(from_vertex, to_vertex)]
-        edgelist.write('"{0}","{1}",{2}\n'.format(IATAFrom, 
-                                                  IATATo, 
-                                                  betweenness))
-        
-
-    edgelist.close()
-
-        
 
     print("\tDetermining network type.")
     # Determine if the graph is directed or undirected
@@ -331,25 +307,6 @@ def simulation_data(network, time, targets, seed):
     print("\tFinding network diameter.")
     diameter = nx.diameter(subgraphs[0])
 
-    # Find the number of simple cycles in the network.
-    #print("\tCalcuating network cycles.")
-    #simple_cycles = nx.simple_cycles(network)
-
-
-    # Find the largest and smallest cycle in the network.
-    smallest_cycle = 9999999999
-    largest_cycle = 0
-   
-    number_cycles = 0
-
-    #for cycle in simple_cycles:
-    #    print(cycle)
-    #    length = len(cycle)
-    #    if length < smallest_cycle:
-    #        smallest_cycle = length
-    #    if length > largest_cycle:
-    #        largest_cycle = length
-
 
     print("\tStoring network parameters")
 
@@ -360,9 +317,6 @@ def simulation_data(network, time, targets, seed):
     data_file.write("Number of verticies: {0}\n".format(verticies))
     data_file.write("Number of edges: {0}\n".format(edges))
     data_file.write("Diameter: {0}\n".format(diameter))
-    data_file.write("Number of cycles: {0}\n".format(number_cycles))
-    data_file.write("Largest cycle: {0}\n".format(largest_cycle))
-    data_file.write("Smallest cycle: {0}\n".format(smallest_cycle))
 
     data_file.close()
 
@@ -774,23 +728,17 @@ def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCUL
             if not network[i][j]['domestic']:
                 clusters.remove((i,j,data))
     
-    sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'], reverse=False)
+    sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'],
+                            reverse=True)
 
 
     cluster = list()
     for cluster_item in sorted_cluster:
-        if network[cluster_item[0]][cluster_item[1]]['cluster'] > 0:
-            cluster.append((cluster_item[0], cluster_item[1]))
+        if network[cluster_item[0]][cluster_item[1]]['cluster'] < 2:
+            if network[cluster_item[0]][cluster_item[1]]['cluster'] > 0:
+                cluster.append((cluster_item[0], cluster_item[1]))
 
-    """
-    iterator = 1
-    for i,j in cluster:
-        print(network[i][j]['IATAFrom'],network[i][j]['IATATo'],network[i][j]['cluster'])
-        if iterator == 10:
-            exit()
-        else:
-            iterator += 1
-    """
+    
 
     os.makedirs("cluster")
 
@@ -1136,6 +1084,7 @@ def infection(input_network, vaccination, starts,DELAY=0, vis = False,
         # Convert the STRING! 
         if int(step) == int(DELAY):
             if vaccination is not None:
+                print(DELAY,"on step",step)
                 network.remove_edges_from(vaccination)
                 # Recalculate the weights of the network as per necessary
                 if RECALCULATE == True:
