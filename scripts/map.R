@@ -1,3 +1,8 @@
+# Map.R
+# Nicholas A. Yager and Matthew Taylor.
+#
+# An early attempt to plot maps of the network overlayed onto a projection of the world
+
 library("maps")
 
 airports = read.csv("data/airports.dat")

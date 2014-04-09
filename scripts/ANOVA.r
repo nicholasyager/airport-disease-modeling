@@ -28,7 +28,7 @@ for (i in efforts) {
 }
 for (i in efforts) {
   for (j in 1:length(B[,1])) {
-    r[k,1] <- "Cluster"
+    r[k,1] <- "Clustering Coefficient"
     r[k,2] <- as.character((i-1)*5)
     r[k,3] <- C[j,i]
     k = k + 1
@@ -70,14 +70,14 @@ bp = barplot(M/3286 ,beside=T, col=colors,
              main="Comparison of Cancelation Strategies",
              ylim=c(0,0.5)
 )
-legend("topright", legend=rownames(M), fill=colors, cex=0.8)
+legend("topright", legend=rownames(M), fill=colors, cex=1)
 plotCI(bp, as.vector(M)/3286, CI95, add=T, pch=NA)
 text(x=as.vector(bp),y=as.vector(M/3286)+CI95,c("B","B","B",
                                                 "D","C","A",
                                                 "G","F","E",
-                                                "J","I","H",
-                                                "M","L","K"
-                                                ), pos=3,cex=0.8)
+                                                "H","J","I",
+                                                "L","L","M"
+                                                ), pos=3,cex=1)
 
 abline(h=0)
 
