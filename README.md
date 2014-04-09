@@ -1,4 +1,11 @@
 # Controlling Disease Propagation Through an International Air Traffic Network
+Nicholas A. Yager <sup>1</sup> and Matthew Taylor <sup>2</sub>
+
+<sup>1</sup> Department of Biochemistry, and Department of Mathematics, State 
+University of New York at Geneseo, Geneseo, New York 14454<br>
+<sup>2</sup> Department of Biology, State University of New York at Geneseo, 
+Geneseo, New York 14454
+
 
 ## Abstract
 
@@ -31,12 +38,10 @@ airline routes as edges was constructed with data from
 [openflights.org](http://openflights.org/data) as shown in Figure 1. Nodes
 without inbound or outbound edges were removed. In addition, redundant edges
 were removed from the network.
-[Documentation](./documentation/flu_simulator.html) on this simulator is
-provided in pydoc form.
 
 <center>
-<img align=center width=600 src=./documentation/images/network_plot.png />
-<div style="text-align:justify;width:550px;font-size:0.8em;"><b>Figure 1: Plot 
+<img align=center width=500 src=./documentation/images/network_plot.png />
+<div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 1: Plot 
 of the modified network.</b> The light blue vertices represent susceptible 
 airports. Simulations start with 10 airports with infectious individuals. The 
 edges these infividuals can travel on are colored green.</div>
@@ -50,8 +55,8 @@ airports with 2 to 20 inbound and outbound flights. Additionally, there are few
 airports that have between 300 and 400 inbound and outbound flights.
 
 <center>
-<img align=center width=600 src=./documentation/images/degree_disributions/network-dist.png />
-<div style="text-align:justify;width:550px;font-size:0.8em;"><b>Figure 2: Degree
+<img align=center width=500 src=./documentation/images/degree_disributions/network-dist.png />
+<div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 2: Degree
 distribution for the airport network.</b> The network exhibits a power law, with
 over 700 airports with a degree of 3 or less. Additionally, there are very few 
 airports with a degree higher than 400. This implies that the topology of the 
@@ -71,17 +76,23 @@ regardless of name, is connected almost entirely to airports with a degrees
 between 200 and 500.
 
 <center>
-<img align=center width=600 src=./documentation/images/degree_disributions/atl-dist.png />
-<img align=center width=600 src=./documentation/images/degree_disributions/roc-dist.png />
-<div style="text-align:justify;width:550px;font-size:0.8em;"><b>Figure 2: Degree
-distribution for the airport network.</b> The network exhibits a power law, with
-over 700 airports with a degree of 3 or less. Additionally, there are very few 
-airports with a degree higher than 400. This implies that the topology of the 
-network favors using a small number of international hubs to carry traffic 
-between a large number of smaller regional airports.</div>
+<img align=center width=500 src=./documentation/images/degree_disributions/atl-dist.png />
+<img align=center width=500 src=./documentation/images/degree_disributions/roc-dist.png />
+<div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 3: Degree
+distribution for the neighbors of ATL and ROC.</b> As shown in the degree
+distribution for ATL's neighbors, ATL is connected to a wide variety of
+different size airports. Although ATL is primarily connected to airports with 
+a degree between 12 and 54, it is also connected to airports with a degree of
+two as well as airports with a degree over 400. This is contrasted to ROC, which
+is connected primarily to airports with between 200 and 400 connections. This
+would suggest that high-degree hubs like ATL serve as connecting stops for 
+flights to and from smaller airports. From this, we can assume that there will
+be more traffic traveling from small airports to international hubs, than there
+will be from an international hub to a particular regional airport.</div>
 </center>
 
-We implemented a disease based upon influenza A. As such, there were four states,
+To examine the propagation of disease through the network, we implemented an
+example disease based upon influenza A. As such, there were four states,
 susceptible, exposed, infectious, and recovered. The infection took three days to
 incubate and 7 days to recover from, and as such was observed to have a basic 
 reproductive rate of 2.32. Using the aforementioned example disease, 
@@ -110,14 +121,10 @@ seen in Figure 4 suggests that infections are most likely to occur in the larger
 international airports, making them valid targets for cancellations and 
 quarantine.
 
-<center>
-<img align=center width=600 src=./documentation/images/infection.gif />
-<div style="text-align:justify;width:550px;font-size:0.8em;"><b>Figure 4: Degree
-distribution for the airport network.</b> The network exhibits a power law, with
-over 700 airports with a degree of 3 or less. Additionally, there are very few 
-airports with a degree higher than 400. This implies that the topology of the 
-network favors using a small number of international hubs to carry traffic 
-between a large number of smaller regional airports.</div>
+<center style="page-break-before:always;">
+<img align=center width=500 src=./documentation/images/infection.gif />
+<div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 4: Degree
+distribution for the airport network.</b> </div>
 
 </center>
 
