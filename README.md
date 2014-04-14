@@ -149,7 +149,7 @@ quarantine.
 <img align=center width=500 src=./documentation/images/infection.gif />
 <div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 4: 
 Propagation of the disease favors highly connected airports near the graph
-center..</b> The infection starts in the 10 most connected airports in the 
+center.</b> The infection starts in the 10 most connected airports in the 
 network. As a result of how network weights are applied, infections are more 
 likely to be spread to other large airports. This trend is easily visualized as 
 the airports in the center of the graph are infected more often. Smaller 
@@ -169,7 +169,7 @@ performed, and we found that strategy (D = 4, F = 52730.4, p < 0.001 ), effort
 (D = 2, F = 640.8, p < 0.001) and their interaction 
 (D = 8, F = 2037.3, p < 0.001) were all significant factors.
 
-A TukeyHSD was performed, as shown in Figure 5. We found that in efforts under
+A Tukey HSD test was performed, as shown in Figure 5. We found that in efforts under
 30%, the application of a random cancellation strategy will increase the number
 for airports containing infectious individuals. We also found that in high
 cancellation efforts the clustering coefficient strategy resulted in the 
@@ -182,8 +182,14 @@ strategy.
 <img align=center width=500 src=./documentation/images/strategy_comparison.png />
 <div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 5: 
 Betweenness centrality and clustering coefficient cancellation strategies prove
-effective at moderate cancellation efforts.</b> </div>
+effective at moderate cancellation efforts.</b> The Tukey HSD test suggests that
+a 30% betweenness centrality-based cancellation is statistically different from
+the similar 30% clustering coefficient-based strategy. We also found that at 
+very high cancellation efforts, the random strategy has better returns that all
+others due to the random nature in which it totally disrupts the transportation
+network.</div>
 </center>
+
 
 
 ## Discussion
