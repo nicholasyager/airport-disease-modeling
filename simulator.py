@@ -3,23 +3,24 @@
 simulator.py is a simulator for an example infection spreading across a 
 network between airports (nodes) via air travel routes (edges). The goal of this
 simulation is to test edge-based quarantine strategies for the given network. 
-Data is loaded with command-line arguments such as:
 
-    simulator.py -gbdrus <airport database> <route database>
+Usage:
 
-    Flags:
-        -g: Run a genetic algorithm quarantine simulation.
-        -b: Run a betweenness-based quarantine simulation.
-        -d: Add a delay to quarantine simulations.
-        -w: Run a simulation based on edge weights.
-        -r: Run a random quarantine simulation.
-	    -c: Run a simulation based on making clusters.
-        -u: Convert the network to an undirected network.
-        -s: Run a naive simulation and output the SIR data.
-        -i: Filter to only quarantine international flights.
-        -q: Filter to only quarantine domestic flights.
-        -y: Disable recalculation of network edges.
+    simulator.py -brcsidv [--delay=<days>] [--nsim=<n>]
+        <airport database> <route database>
 
+Flags:
+    -b: Run a betweenness-based quarantine simulation.
+    -r: Run a random quarantine simulation.
+    -c: Run a simulation based on vertex clustering coefficent.
+    -s: Run a naive simulation and output the SIR data.
+    -i: Filter to only quarantine international flights.
+    -d: Filter to only quarantine domestic flights.
+    -v: Visualize the network by plotting each time step.
+
+Option:
+    --delay=<days>  The number of days to delay a cancellation strategy.
+    --nsim=<n>      The number of simulations to perform per strategy.
 """
 
 # Title:  simulator.py
@@ -31,7 +32,6 @@ import getopt
 import math
 import networkx as nx
 import matplotlib.pyplot as plt
-#from mpl_toolkits.basemap import Basemap as Basemap
 import operator
 import os
 import random
@@ -55,97 +55,58 @@ def main():
     """
 
     # Flag defaults
-    GENETIC = False 
-    BETWEENNESS = False 
-    WEIGHT = False 
-    RANDOM = False 
-    SIR = False
-    UNDIRECT = False
     VISUALIZE = False
-    EDGES = False
     INTERNATIONAL = False
     DOMESTIC = False
-    CLUSTER = False
-    RECALCULATE = True
     DELAY = 0
+    NUM_SIMULATIONS = 100
 
     # Determine the parameters of the current simulation.
-    opts, args = getopt.getopt(sys.argv[1:], "wbgd:iqcrusvey", [ "Weight",
-                                                            "Betweenness",
-                                                            "Genetic",
-                                                            "Delay",
-                                                            "Cluster",
-                                                            "International",
-                                                            "Domestic",
-                                                            "Random",
-                                                            "Undirect",
-                                                            "SIR",
-                                                            "visualize",
-                                                            "Recalculate",
-                                                            "ByEdge" ]
+    opts, args = getopt.getopt(sys.argv[1:], "brcsidv", ["delay=",
+                                                         "nsim="]
                                                             )
 
     # Check if the data arguments are available
     if len(args) < 2:
-        print("\nflu_simulator.py -gbdrus <airport database> <route database>\n")
-        print("Flags:\n\t-g: Run a genetic algorithm quarantine simulation.")
-        print("\t-y: Disable network edge recalculation.")
-        print("\t-b: Run a betweenness-based quarantine simulation.")
-        print("\t-d: Run a degree-based quarantine simulation.")
-        print("\t-r: Run a random quarantine simulation.")
-        print("\t-u: Convert the network to an undirected network.")
-        print("\t-s: Run a naive simulation and output the SIR data.")
-        print("\t-c: Run a simulation based on local clustering coefficients.")
-        print("\t-q: Run a simulation based on domestic quarantine.")
-        print("\t-i: Run a simulation based on international quarantine.\n")
+        print(__doc__)
         exit()
 
 
     AIRPORT_DATA = args[0]
     ROUTE_DATA = args[1]
 
-
+    simulations = list()
 
     for o, a in opts:
-        if o == "-g":
-            GENETIC = True
-            BETWEENNESS = False
-            DEGREE = False
-        elif o == "-b":
-            GENETIC = False
-            BETWEENNESS = True
-        elif o == "-w":
-            GENETIC = False
-            WEIGHT = True
-        elif o == "-d":
-            DELAY = a
+        if o == "-b":
+            simulations.append("betweenness")
         elif o == "-r":
-            GENETIC = False
-            RANDOM = True
+            simulations.append("random")
         elif o == "-s":
-            SIR = True
-        elif o == "-u":
-            UNDIRECT = True
+            simulations.append("sir")
+        elif o == "-c":
+            simulations.append("clustering")
         elif o == "-v":
             VISUALIZE = True
-        elif o == "-e":
-            EDGES = True
         elif o == "-i":
             INTERNATIONAL = True
         elif o == "-q":
             DOMESTIC = True
-        elif o == "-c":
-            CLUSTER = True
         elif o == "-y":
             RECALCULATE = False
+        elif o == "--delay":
+            DELAY = int(a)
+        elif o == "--nsim":
+            NUM_SIMULATIONS = int(a)
+
+
             
-    NUM_SIMULATIONS = 100
 
     seed = 100
     random.seed(seed)
 
     # Identify the script.
-    print("Flu Simulator 1.11.5")
+    print("Air Disease Simulator 2.0.0")
     print("Created by Nicholas A. Yager and Matthew Taylor\n\n")
 
     # Create the network using the command arguments.
@@ -157,18 +118,15 @@ def main():
     for airport, degree in degrees.items():
         weights[airport] = network.out_degree(airport) +\
                            network.in_degree(airport)
-    target = list()
+    targets = list()
     for ind in range(0,NUM_SIMULATIONS):
         target_round = list()
         while len(target_round) < 10:
              chosen_airport = weighted_random(weights)
              if chosen_airport not in target_round:
                  target_round.append(chosen_airport)
-        target.append(target_round)
+        targets.append(target_round)
 
-
-    if UNDIRECT:
-        network = network.to_undirected()
 
     # Make a directory for the data, and change into that directory.
     currenttime = time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
@@ -176,25 +134,120 @@ def main():
     os.chdir(currenttime)
 
     # Record relevent data about the simulation.
-    simulation_data(network, currenttime, target, seed)
+    # TMP simulation_data(network, currenttime, target, seed)
+
+
+    # Prepare simulations
+
+    # Remove some edges as per necessary from the pool of edges that can be
+    # used as cancelled edges.
+
+    edgepool = network.edges(data=True)
+    if INTERNATIONAL:
+        for i,j,data in edgepool:
+            if data["international"] == False:
+                edgepool.remove((i,j,data))
+            index += 1
+    elif DOMESTIC:
+        for i,j,data in edgepool:
+            if data["domestic"] == False:
+                degrees.edgepool((i,j,data))
+            index += 1
+
+
+    for strategy in simulations:
+    
+        print("{0} Mode.".format(strategy) )
+
+        index = 0
+
+        # Generate a list a sorted list of flights to cancel based on the
+        # strategy.
+        
+        cancellist = list()
+        if strategy == "random":
+            # Sort the edges randomly
+
+            cancellist = random.sample(edgepool, len(edgepool))
+
+        elif strategy == "clustering":
+            # Sort the edges based on the sum of the clustering coefficent.
+
+            sorted_cluster = sorted(edgepool, key=lambda k: k[2]['cluster'],
+                            reverse=True)
+            for cluster_item in sorted_cluster:
+                if network[cluster_item[0]][cluster_item[1]]['cluster'] < 2:
+                    if network[cluster_item[0]][cluster_item[1]]['cluster'] > 0:
+                        cancellist.append((cluster_item[0], cluster_item[1]))
+
+        elif strategy == "betweenness":
+            # Sort the edges based on weighted edge-betweenness.
+
+            betweennesses = nx.edge_betweenness_centrality(network,
+                                                           weight="weight")
+            cancellist = sorted(betweennesses.keys(), 
+                                key=lambda k: betweennesses[k], reverse=True)
+
+
+        print(cancellist[:20])
+        # Make a new folder for the data.
+        os.makedirs(strategy)
+        
+        iteration = 0
+        efforts = [0]
+        efforts.extend(range(1,101,5))
+        for target in targets:
+
+            # Open a file for this targets dataset
+            output_file = open("{0}/{0}_{1}.csv".format(strategy,
+                                                        pad_string(iteration,4)
+                                                        ),"w")
+            output_file.write('"effort","total_infected, edges_closed"\n')
+
+
+            for effort in efforts:
+                if effort != 0:
+                    max_index = int(len(cancellist) * (effort/100))-1
+                    cancelled = cancellist[0:max_index]
+                else:
+                    cancelled = None
+
+                title = "{0} - {1}%".format(strategy, effort/100)
+                results = infection(network, cancelled, target, vis=VISUALIZE,
+                                    title=title, DELAY=DELAY)
+                total_infected = results["Infected"] + results["Recovered"]
+                output_file.write("{0},{1}\n".format(effort/100,total_infected))
+                
+                if total_infected == 1:
+                    for remaining_effort in range(effort+5,101,5):
+                        output_file.write("{0},{1}\n".format(remaining_effort/100,
+                                                              total_infected))
+                    break
+
+            iteration += 1
+            output_file.close()
+
+
+    exit("Terminating")
+
 
     if BETWEENNESS:
-        betweenness_simulations(network, target, VISUALIZE, EDGES, DELAY,
+        betweenness_simulations(network, target, VISUALIZE, DELAY,
                                 INTERNATIONAL, DOMESTIC, RECALCULATE)
     
     if WEIGHT:
-        degree_simulations(network, target, VISUALIZE, EDGES, DELAY,
+        degree_simulations(network, target, VISUALIZE,  DELAY,
                            INTERNATIONAL, DOMESTIC, RECALCULATE)
 
     if RANDOM:
-        random_simulations(network, target, VISUALIZE, EDGES, DELAY,
+        random_simulations(network, target, VISUALIZE,  DELAY,
                            INTERNATIONAL, DOMESTIC, RECALCULATE)
 
     if SIR:
-        sir_simulations(network, target, VISUALIZE, EDGES, DELAY, RECALCULATE)
+        sir_simulations(network, target, VISUALIZE, DELAY, RECALCULATE)
 
     if CLUSTER:
-        cluster_simulations(network, target, VISUALIZE, EDGES, DELAY,
+        cluster_simulations(network, target, VISUALIZE, DELAY,
                             INTERNATIONAL, DOMESTIC, RECALCULATE)
 
 def weighted_random(weights):
@@ -226,7 +279,7 @@ def pad_string(integer, n):
 
     return string
 
-def sir_simulations(network, targets, VISUALIZE, EDGES, DELAY, RECALCULATE):
+def sir_simulations(network, targets, VISUALIZE, DELAY, RECALCULATE):
     """
     Run an infection simulation across the network for each of the given
     targets, and determine the median number of infected per day.
@@ -314,321 +367,6 @@ def simulation_data(network, time, targets, seed):
 
     data_file.close()
 
-def random_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
-    """
-    Simulate the spread of infection for increasing vaccination efforts by
-    quarantining airports randomly.
-
-    Args:
-        network: A NetworkX graph object.
-
-    Returns:
-        VOID
-
-    IO:
-        random.csv: A gile with the number of total ingected people in the
-                        network for each quarantine effort.
-    """
-
-    print("Random Mode")
-
-    # Make a new folder for the degree data.
-    os.makedirs("random")
-
-    # Filter international flights if necessary
-    randoms = random.sample(network.edges(), len(network.edges()))
-
-    if I:
-        for i,j in randoms:
-            if network[i][j]["international"] == False:
-                randoms.remove((i,j))
-    if Q:
-        for i,j in randoms:
-            if network[i][j]["domestic"] == False:
-                randoms.remove((i,j))
-
-    iteration = 0
-    for target in targets:
-
-        # Open a file for this targ'ets dataset
-        random_file = open("random/random_{0}.csv".format(pad_string(iteration,4)),"w")
-        random_file.write('"effort","total_infected"\n')
-
-
-        # Generate a baseline
-        results = infection(network, None, target,DELAY=DELAY, vis=VISUALIZE, 
-                            title="Random - 0%")
-        total_infected = results["Infected"] + results["Recovered"]
-        random_file.write("{0},{1}\n".format(0,total_infected))
-        
-        # Perform a check for every strategy
-        for effort in range(1,101,5):
-            max_index = int(len(randoms) * (effort/100))-1
-            strategy = randoms[0:max_index]
-
-            title = "random - {0}%".format(effort/100)
-            results = infection(network, strategy, target, vis=VISUALIZE,
-                                DELAY=DELAY,
-                                title=title, inf_type=EDGES)
-            total_infected = results["Infected"] + results["Recovered"]
-            random_file.write("{0},{1}\n".format(effort/100,total_infected))
-     
-            if total_infected == 1:
-                for remaining_effort in range(effort+5,101,5):
-                    random_file.write("{0},{1}\n".format(remaining_effort/100,
-                                                         total_infected))
-                break
-   
-        iteration += 1
-        random_file.close()
-
-
-
-def degree_simulations(network, targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
-    """
-    Simulate the spread of infection for increasing vaccination efforts by 
-    closing routes of decreasing degree-based weight.
-
-    Args:
-        network: A NetworkX graph object.
-        targets: A list of the initial infection vertices.
-
-    Returns:
-        Void
-
-    IO:
-        degree.csv: A file with the number of total infected people in the
-                         network for each vaccination effort.
-    """
-    print("Degree Mode.")
-    print("\tCalculating degrees", end="")
-    sys.stdout.flush()
-    degrees = network.edges(data = True)
-
-    index = 0
-    if I:
-        for i,j,data in degrees:
-            if data["international"] == False:
-                degrees.remove((i,j,data))
-            index += 1
-    if Q:
-        for i,j,data in degrees:
-            if data["domestic"] == False:
-                degrees.remove((i,j,data))
-            index += 1
-
-    sorted_degree = sorted(degrees, key=lambda k: k[2]['weight'], reverse=True)
-    degree = list()
-    for degree_item in sorted_degree:
-        degree.append((degree_item[0], degree_item[1]))
-    print("\t\t\t\t\t[Done]")
-
-    # Make a new folder for the degree data.
-    os.makedirs("weight")
-
-    iteration = 0
-    for target in targets:
-
-        # Open a file for this targ'ets dataset
-        degree_file = open("weight/weight_{0}.csv".format(pad_string(iteration,4)),"w")
-        degree_file.write('"effort","total_infected, edges_closed"\n')
-
-
-        # Generate a baseline
-        results = infection(network, None, target, vis=VISUALIZE,
-                            DELAY=DELAY, title="weight - 0%")
-        total_infected = results["Infected"] + results["Recovered"]
-        degree_file.write("{0},{1}\n".format(0,total_infected))
-
-        # Perform a check for every strategy
-        for effort in range(1,101,5):
-            max_index = int(len(degree) * (effort/100))-1
-            strategy = degree[0:max_index]
-
-            edges_closed = len(strategy)
-
-            title = "weight - {0}%".format(effort/100)
-
-            results = infection(network, strategy, target, DELAY=DELAY,
-                                vis=VISUALIZE, 
-                                title=title, inf_type=EDGES)
-            total_infected = results["Infected"] + results["Recovered"]
-            degree_file.write("{0},{1}\n".format(effort/100,
-                                                 total_infected,
-                                                 edges_closed))
-
-            if total_infected == 1:
-                for remaining_effort in range(effort+5,101,5):
-                    degree_file.write("{0},{1}\n".format(remaining_effort/100,
-                                                         total_infected))
-                break
-
-        
-        iteration += 1
-        degree_file.close()
-
-
-def betweenness_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
-    """
-    Simulate the spread of infection for increasing vaccination efforts by 
-    quarantining airports of decreasing betweenness.
-
-    Args:
-        network: A NetworkX graph object.
-        targets: A list of the initial infection vertices.
-
-    Returns:
-        Void
-
-    IO:
-        betweenness.csv: A file with the number of total infected people in the
-                         network for each vaccination effort.
-    """
-
-    print("Betweenness Centrality Mode.")
-    print("\tCalculating betweenness centrality", end="")
-    sys.stdout.flush()
-
-    betweennesses = nx.edge_betweenness_centrality(network,weight="weight")
-    betweenness = sorted(betweennesses.keys(), 
-                    key=lambda k: betweennesses[k], reverse=True)
-
-    if I:
-        for i,j in betweenness:
-            if not network[i][j]["international"]:
-                betweenness.remove((i,j))
-    if Q:
-        for i,j in betweenness:
-            if not network[i][j]["domestic"]:
-                betweenness.remove((i,j))
-
-    print("\t\t\t\t[Done]")
-
-
-    os.makedirs("betweenness")
-
-    iteration = 0
-    for target in targets:
-    
-
-        # Write the betweenness data to a folder.
-        betweenness_file = open(
-                            "betweenness/betweenness_{0}.csv".format( 
-                                            pad_string(iteration,4)),
-                            "w")
-                           
-        betweenness_file.write('"effort","total_infected"\n')
-
-        # Generate a baseline
-        results = infection(network, None, target, vis=VISUALIZE,
-                            title="Betweenness - 0%",DELAY=DELAY)
-        total_infected = results["Infected"] + results["Recovered"]
-        betweenness_file.write("{0},{1}\n".format(0,total_infected))
-
-        # Perform a check for every strategy
-        for effort in range(1,101,5):
-            max_index = int(len(betweenness) * (effort/100))-1
-            strategy = betweenness[0:max_index]
-
-            title = "betweenness - {0}%".format(effort/100)
-            results = infection(network, strategy, target, vis=VISUALIZE,
-                                title=title, inf_type=EDGES, DELAY=DELAY)
-            total_infected = results["Infected"] + results["Recovered"]
-            betweenness_file.write("{0},{1}\n".format(effort/100,total_infected))
-            
-            if total_infected == 1:
-                for remaining_effort in range(effort+5,101,5):
-                    betweenness_file.write("{0},{1}\n".format(remaining_effort/100,
-                                                              total_infected))
-                break
-
-        iteration += 1
-        betweenness_file.close()
-
-
-def cluster_simulations(network,targets, VISUALIZE, EDGES, DELAY, I, Q, RECALCULATE):
-    """
-    Simulate the spread of infection for increasing vaccination efforts by 
-    quarantining airports by decreasing local clustering coefficients.
-
-    Args:
-        network: A NetworkX graph object.
-        targets: A list of the initial infection vertices.
-
-    Returns:
-        Void
-
-    IO:
-        cluster.csv: A file with the number of total infected people in the
-                         network for each vaccination effort.
-    """
-
-    print("Local Clustering Coefficient Mode.")
-    sys.stdout.flush()
-    
-    clusters = network.edges(data = True)
-
-    if I:
-        for i,j,data in clusters:
-            if not network[i][j]['international']:
-                clusters.remove((i,j,data))
-    if Q:
-        for i,j,data in clusters:
-            if not network[i][j]['domestic']:
-                clusters.remove((i,j,data))
-    
-    sorted_cluster = sorted(clusters, key=lambda k: k[2]['cluster'],
-                            reverse=True)
-
-
-    cluster = list()
-    for cluster_item in sorted_cluster:
-        if network[cluster_item[0]][cluster_item[1]]['cluster'] < 2:
-            if network[cluster_item[0]][cluster_item[1]]['cluster'] > 0:
-                cluster.append((cluster_item[0], cluster_item[1]))
-
-    
-
-    os.makedirs("cluster")
-
-    iteration = 0
-    for target in targets:
-    
-
-        # Write the cluster data to a folder.
-        cluster_file = open(
-                            "cluster/cluster_{0}.csv".format( 
-                                            pad_string(iteration,4)),
-                            "w")
-                           
-        cluster_file.write('"effort","total_infected"\n')
-
-        # Generate a baseline
-        results = infection(network, None, target, vis=VISUALIZE,
-                            title="Cluster - 0%", DELAY=DELAY)
-        total_infected = results["Infected"] + results["Recovered"]
-        cluster_file.write("{0},{1}\n".format(0,total_infected))
-
-        # Perform a check for every strategy
-        for effort in range(1,101,5):
-            max_index = int(len(cluster) * (effort/100))-1
-            strategy = cluster[0:max_index]
-
-            title = "cluster - {0}%".format(effort/100)
-            results = infection(network, strategy, target, vis=VISUALIZE,
-                                title=title, inf_type=EDGES, DELAY=DELAY)
-            total_infected = results["Infected"] + results["Recovered"]
-            cluster_file.write("{0},{1}\n".format(effort/100,total_infected))
-            
-            if total_infected == 1:
-                for remaining_effort in range(effort+5,101,5):
-                    cluster_file.write("{0},{1}\n".format(remaining_effort/100,
-                                                              total_infected))
-                break
-
-        iteration += 1
-        cluster_file.close()
-   
 def create_network(nodes, edges):
     """
     Create a NetworkX graph object using the airport and route databases.
@@ -807,7 +545,7 @@ def calculate_weights(input_network):
     return G
 
 def infection(input_network, vaccination, starts,DELAY=0, vis = False, 
-              file_name = "sir.csv", title="", inf_type=False, RECALCULATE = True):
+              file_name = "sir.csv", title="",  RECALCULATE = True):
     """
     Simulate an infection within network, generated using seed, and with the
     givin vaccination strategy. This function will write data from each timestep
