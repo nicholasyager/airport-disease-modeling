@@ -1,5 +1,4 @@
 
-data/edge-based/.Rhistory
-data/node-based/directed/.Rhistory
-data/node-based/edges/.RData
-data/node-based/edges/.Rhistory
+*.swp
+*.Rhistory
+*.RData

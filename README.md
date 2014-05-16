@@ -1,4 +1,4 @@
-# Controlling Disease Propagation Through an International Air Traffic Network
+# Edge-based control of disease propagation through the world-wide airport network
 Nicholas A. Yager <sup>1</sup> and Matthew Taylor <sup>2</sub>
 
 <sup>1</sup> Department of Biochemistry, State University of New York at 
@@ -31,6 +31,26 @@ coefficient in the event of a serious epidemic.
 
 ## Introduction
 
+The connections that connect all of humanity form a large network of 
+interactions and relationships. In recent years, these network edges have
+come under scrutiny in the modeling of information though social networks,
+the spread of people though transportation networks, and the prediction of
+infectious disease within populations.
+
+Most of these real-world networks are defined as as small-world networks;
+networks that are characterized by a power-law decaying degree distribution and 
+a high average clustering coefficient <sup>[[1][1]]</sup>. Interestingly, 
+using airports as network vertices and routes as network edges provides a
+massive small-world network that reflects the travel needs of 2.86 annual
+airline passengers per year.
+
+Previous research into infectious disease in small-world networks has 
+highlighted the importance of the structural connections in the spread of
+disease <sup>[[2][2]]</sup>. To explore the effect of the connections between
+airports, we ran simulations of the spread of a disease through the airline
+network and implemented betweenness centrality- and clustering coefficient-based
+flight cancellation strategies.
+ 
 ## Methods
 
 Using python and NetworkX, a network consisting of airports as nodes and
@@ -47,7 +67,7 @@ vertices represent susceptible airports. Simulations start with 10 airports with
 infectious individuals. The edges these individuals can travel on are colored 
 green. The separation of the tight clusters in the center from the rest of the
 graph suggests that the network is highly stratified in the types of connections
-between airports.</div>
+between airports.</div><br>
 </center>
 
 Examination of the properties of our network yielded 39,467 edges, 3,308 
@@ -64,7 +84,7 @@ distribution for the airport network.</b> The network exhibits a power law, with
 over 700 airports with a degree of 3 or less. Additionally, there are very few 
 airports with a degree higher than 400. This implies that the topology of the 
 network favors using a small number of international hubs to carry traffic 
-between a large number of smaller regional airports.</div>
+between a large number of smaller regional airports.</div><br>
 </center>
 
 We also examined the degree distribution of both a high and low degree airport's
@@ -92,7 +112,7 @@ with between 200 and 400 connections. This would suggest that high-degree hubs
 like ATL serve as connecting stops for flights to and from smaller airports. 
 From this, we can assume that there will be more traffic traveling from small 
 airports to international hubs, than there will be from an international hub to 
-a particular regional airport.</div>
+a particular regional airport.</div><br>
 </center>
 
 To examine the propagation of disease through the network, we implemented an
@@ -126,6 +146,7 @@ such that
 
 <center>
 <img src="./documentation/equations/betweenness_centrality.png" width="146" height="53" />
+<br>
 </center>
 
 The clustering coefficient summation is assigned to edge<sub>ij</sub> as the 
@@ -155,7 +176,7 @@ likely to be spread to other large airports. This trend is easily visualized as
 the airports in the center of the graph are infected more often. Smaller 
 regional airports on the periphery of the graph are sometimes infected, but the 
 rate of infection is much lower when distant from the central, highly connected 
-networks. </div>
+networks. </div><br>
 </center>
 
 To collect a large enough sample size, 343 simulations were performed for each
@@ -176,7 +197,11 @@ cancellation efforts the clustering coefficient strategy resulted in the
 greatest decrease in the number of airports with infectious individuals. In
 a moderate effort, such as 30%, betweenness centrality is the optimal strategy,
 and is statistically different that the 30% clustering coefficient-based 
-strategy. 
+strategy. Specifically, a 30% betweenness centrality approach provides a mean
+decrease of 32.1%, whereas a 30% clustering coefficient approach provided 
+decrease of 30.9%. It should also be noted that a 50% cancellation effort
+using a clustering coefficient strategy reduced the number of infections by 
+49.3%.
 
 <center>
 <img align=center width=500 src=./documentation/images/strategy_comparison.png />
@@ -187,19 +212,89 @@ a 30% betweenness centrality-based cancellation is statistically different from
 the similar 30% clustering coefficient-based strategy. We also found that at 
 very high cancellation efforts, the random strategy has better returns that all
 others due to the random nature in which it totally disrupts the transportation
-network.</div>
+network.</div><br>
 </center>
 
+We tested our cancellation strategies while implementing delays in when
+cancellations took place. We tested delays of 0, 7, 14, 21, and 28 days. An 
+one-way ANOVA test was performed, and we found that the effect of the delay
+was statistically significant (DF = 4, F = 1291.4, p < 0.001). We also performed
+a Tukey HSD test, and we found that each of the delays were statistically 
+different. The critical point in the effectiveness of the cancellation 
+strategies seems to be around 14 days after infection. It should be noted,
+however, that all delays decrease the effectiveness of our cancellation
+strategies.
 
+<center>
+<img align=center width=500 src=./documentation/images/delay.png />
+<div style="text-align:justify;width:450px;font-size:0.8em;"><b>Figure 6: 
+Cancellation delay has a significant impact on the effectiveness of cancellation
+strategies.</b> A Tukey HSD test applied to delayed cancellation strategies. The
+test suggests that all of our tested delays were statistically significant. In 
+addition, we found that the delay with the greatest change in the number of 
+airports with infectious individuals is around the 14 day mark.
+</div><br>
+</center>
 
 ## Discussion
+The cancellation of specific airline routes effectively mitigates the spread of
+an infectious disease in the airline network. In the case of betweenness
+centrality, previous findings support the efficacy of of edge betweenness
+centrality in the control of an infectious disease <sup>[3][3]</sup>.
+
+Clustering coefficient-based flight cancellations are novel in that they target 
+flights based on the clustering of their connecting airports. Since the 
+clustering  coefficient targets vertices based on the degree to which they are 
+connected to their local cluster, the metric tends to target routes between 
+smaller regional airports as opposed to large international traffic hubs. As a
+result, closed flights from smaller airports would tend to be lower traffic
+flights between distinct economic markets.
+ 
+As an interesting result of our model, some cancellation strategies result in a
+net increase in the number of airport with infectious individuals. A random
+cancellation strategy with a 10% effort effectively increases the number of
+airports with infectious individuals by 7.6%. This novel result would suggest
+that an inadequate response to cancellations would result in more infectious
+individuals being rerouted to connecting airports that they would not have
+traveled to under normal circumstances. The unintended consequence of 
+increasing the number of infections lends credence to the necessity to choose 
+wisely and act swiftly in the control of infectious diseases.
+
+Our study is systematically different from other research of this type. Namely,
+our simulations include all 3,308 viable airports and 39,467 routes. This 
+contrasts with a study performed by Marcelino and Kaiser which focused only on
+the largest 500 airports in the network <sup>[3][3]</sup>. Interestingly, our
+data confirm their findings that connectivity plays a strong role in the spread
+of disease globally. In addition to network size, our model is unique in that 
+our stochastically-chosen starting locations provides us a more complete 
+understanding of how the diseases propagates through the network as a whole. 
+
+The testing of delays in cancellations provides us useful information about the
+importance of when to implement a cancellation strategy. Our model suggests that
+a control strategy should be in place in under a week for optimal results. The
+model also predicts that after two weeks the number of airports with infectious
+individuals will increase by as much as 20%. As stated by Walter Gaber in 2009,
+the ability to detect infectious diseases and properly control them becomes 
+crucial <sup>[4][4]</sup>.
+
+In conclusion, our results suggest that flight cancellations can be an effective
+means of controlling the propagation of disease. Furthermore, we recommend  a 
+strategy based on betweenness centrality or clustering coefficient implemented
+within a week of initial exposure.
 
 ## References
-   1.  He D, Dushoff J, Eftimie R, Earn DJD. 2013 *Patterns of sperad of 
-influenza A in Canada*. *Proc. R. Soc. B.* 280, 20131174; 
-DOI: 10.1098/rspb.2013.1174
-   2. Brockmann D, Helbing D. 2013 *The Hidden Geometry of Complex, 
-Network-Driven Contagion Phenomena*. *Science* 342, 1337; 
-DOI: 10.1126/science.1245200
- 
 
+1. Amaral LAN, Scala A, Barthelemy M, Stanley HE. 2000 *Classes of small-world
+    networks*. *Proc. Nat. Acad. Sci.* 97;21. DOI: doi: 10.1073/pnas.20032719.
+2. Amaral LAN, Guimera R. 2004 *Modeling the world-wide airport network.*
+    *Eur. Phys. J B*. 38, 381-385. DOI: 10.1140/epjb/e2004-00131-0.
+3. Marcelino J, Kaiser M. 2012 *Critical paths in a metapopulation model of
+    H1N1: Efficiently delaying influenza spreading through flight cancellation.*
+    *PLoS Curr.* April 23. DOI: 10.1371/4f8c9a2e1fca8.
+4. Garber W, Goetsch U, Diel R, Doerr HW, Gottschalk R. 2009 *Screening for
+    Infectious Diseases at International Airports: The Frankfurt Model*.
+    *Aviat Space Environ Med* 80:595-600.
+[1]: http://www.pnas.org/content/97/21/11149.long
+[2]: http://etseq.urv.cat/seeslab/media/publication_pdfs/Guimera-2004-Eur.Phys.J.B-38-381.pdf
+[3]: http://www.ncbi.nlm.nih.gov/pmc/articles/PMC3392097/ 
+[4]: http://eagosh.org/cmsv6/eagosh-files/articles_presentations_infos/international_health_regulations/asma_090707_s1.pdf
