@@ -228,27 +228,6 @@ def main():
             output_file.close()
 
 
-    exit("Terminating")
-
-
-    if BETWEENNESS:
-        betweenness_simulations(network, target, VISUALIZE, DELAY,
-                                INTERNATIONAL, DOMESTIC, RECALCULATE)
-    
-    if WEIGHT:
-        degree_simulations(network, target, VISUALIZE,  DELAY,
-                           INTERNATIONAL, DOMESTIC, RECALCULATE)
-
-    if RANDOM:
-        random_simulations(network, target, VISUALIZE,  DELAY,
-                           INTERNATIONAL, DOMESTIC, RECALCULATE)
-
-    if SIR:
-        sir_simulations(network, target, VISUALIZE, DELAY, RECALCULATE)
-
-    if CLUSTER:
-        cluster_simulations(network, target, VISUALIZE, DELAY,
-                            INTERNATIONAL, DOMESTIC, RECALCULATE)
 
 def weighted_random(weights):
     number = random.random() * sum(weights.values())
@@ -278,38 +257,6 @@ def pad_string(integer, n):
         string = "0" + string
 
     return string
-
-def sir_simulations(network, targets, VISUALIZE, DELAY, RECALCULATE):
-    """
-    Run an infection simulation across the network for each of the given
-    targets, and determine the median number of infected per day.
-
-    Args:
-        network: A NetworkX graph object.
-        targets: A list of initial infection targets.
-
-    Returns
-        VOID.
-
-    IO:
-        sir.csv: The proportion of a population that is infected by time step.
-    """
-
-    print("SIR Mode")
-
-    # Make a new folder for the degree data.
-    os.makedirs("sir")
-
-    iteration = 0
-    
-    for target in targets:
-        print(target)
-        sir_file = "sir/sir_{0}.csv".format(pad_string(iteration,4))
-
-        results = infection(network, None, target, vis=VISUALIZE, file_name=sir_file )
-        N = results["Suscceptable"] + results["Infected"] + results["Recovered"]
-        iteration += 1
-
 
 def simulation_data(network, time, targets, seed):
     """
